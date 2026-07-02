@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STC 管理画面 | 講習スケジュール管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
+        
+        * {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        
+        .font-en {
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0b1120 0%, #1a2a4a 100%);
+            color: #f1f5f9;
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .admin-header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .admin-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-style: italic;
+        }
+        
+        .admin-subtitle {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            font-weight: bold;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            letter-spacing: 0.1em;
+            font-style: italic;
+            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(14, 165, 233, 0.5);
+        }
+        
+        .btn-edit {
+            background: #38bdf8;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            font-size: 0.75rem;
+            margin-right: 5px;
+        }
+        
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            font-size: 0.75rem;
+        }
+        
+        .table-container {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 40px;
+        }
+        
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .admin-table thead {
+            background: rgba(56, 189, 248, 0.1);
+            border-bottom: 2px solid rgba(56, 189, 248, 0.3);
+        }
+        
+        .admin-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 900;
+            color: #38bdf8;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            font-style: italic;
+        }
+        
+        .admin-table td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+            font-weight: bold;
+        }
+        
+        .admin-table tbody tr:hover {
+            background: rgba(56, 189, 248, 0.05);
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        
+        .status-ok {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        
+        .status-full {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        
+        .status-cancel {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+            border: 1px solid #9ca3af;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #0f172a;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            color: #38bdf8;
+            font-style: italic;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 900;
+            color: #38bdf8;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(100, 116, 139, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 8px;
+            color: #f1f5f9;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+        
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+        }
+        
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .btn-submit {
+            flex: 1;
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 900;
+            cursor: pointer;
+            border: none;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+        
+        .btn-cancel {
+            flex: 1;
+            background: rgba(107, 114, 128, 0.3);
+            color: #cbd5e1;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 900;
+            cursor: pointer;
+            border: 1px solid rgba(107, 114, 128, 0.5);
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .sync-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            color: #10b981;
+            font-size: 0.875rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .sync-indicator.syncing {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: rgba(56, 189, 248, 0.3);
+            color: #38bdf8;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- ヘッダー -->
+        <div class="admin-header">
+            <h1 class="admin-title">STC 管理画面</h1>
+            <p class="admin-subtitle">講習スケジュール管理システム</p>
+        </div>
+        
+        <!-- 同期状態インジケーター -->
+        <div id="sync-status" class="sync-indicator">
+            <i class="fas fa-check-circle"></i>
+            <span>Firestore と同期中...</span>
+        </div>
+        
+        <!-- 追加ボタン -->
+        <div style="margin-bottom: 30px;">
+            <button class="btn-primary" onclick="openModal()">
+                <i class="fas fa-plus mr-2"></i> 新規講習を追加
+            </button>
+        </div>
+        
+        <!-- テーブル -->
+        <div class="table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>講習コース</th>
+                        <th>開催月</th>
+                        <th>開始日</th>
+                        <th>終了日</th>
+                        <th>表示日付</th>
+                        <th>ステータス</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-list">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #64748b;">
+                            データを読み込み中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 空の状態 -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <p style="font-size: 1.125rem; font-weight: bold;">講習予定がありません</p>
+            <p style="font-size: 0.875rem; margin-top: 10px;">「新規講習を追加」ボタンから追加してください</p>
+        </div>
+    </div>
+    
+    <!-- モーダル -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modal-title">新規講習を追加</h2>
+            
+            <form id="schedule-form" onsubmit="saveSchedule(event)">
+                <div class="form-group">
+                    <label class="form-label">講習コース名 *</label>
+                    <input type="text" id="courseName" class="form-input" placeholder="例：玉掛け技能講習" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">開催月 *</label>
+                    <select id="month" class="form-select" required>
+                        <option value="">選択してください</option>
+                        <option value="7">7月</option>
+                        <option value="8">8月</option>
+                        <option value="9">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                    </select>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label class="form-label">開始日 *</label>
+                        <input type="number" id="dayStart" class="form-input" placeholder="20" min="1" max="31" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">終了日 *</label>
+                        <input type="number" id="dayEnd" class="form-input" placeholder="22" min="1" max="31" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">ステータス *</label>
+                    <select id="status" class="form-select" required>
+                        <option value="">選択してください</option>
+                        <option value="ok">空席あり</option>
+                        <option value="full">満員御礼</option>
+                        <option value="cancel">中止</option>
+                    </select>
+                </div>
+                
+                <div class="form-buttons">
+                    <button type="submit" class="btn-submit">保存</button>
+                    <button type="button" class="btn-cancel" onclick="closeModal()">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrFI1MkCKdIT4mpzZWKdNPJZt3Gpyw",
+            authDomain: "stc-hp.firebaseapp.com",
+            projectId: "stc-hp",
+            storageBucket: "stc-hp.firebasestorage.app",
+            messagingSenderId: "795332931918",
+            appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let schedules = [];
+        let editingId = null;
+        
+        // 認証
+        signInAnonymously(auth)
+            .then(() => {
+                console.log("✅ 管理画面：認証成功");
+                loadSchedules();
+            })
+            .catch((error) => {
+                console.error("❌ 認証エラー:", error);
+            });
+        
+        // データ読み込み
+        function loadSchedules() {
+            onSnapshot(collection(db, "schedules"), (snapshot) => {
+                schedules = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                renderTable();
+                updateSyncStatus();
+            });
+        }
+        
+        // テーブル表示
+        function renderTable() {
+            const tbody = document.getElementById('schedule-list');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (schedules.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            tbody.innerHTML = schedules.map(item => `
+                <tr>
+                    <td>${item.courseName}</td>
+                    <td>${item.month}月</td>
+                    <td>${item.dayStart}日</td>
+                    <td>${item.dayEnd}日</td>
+                    <td>${item.date}</td>
+                    <td>
+                        <span class="status-badge status-${item.status}">
+                            ${item.status === 'ok' ? '空席あり' : item.status === 'full' ? '満員' : '中止'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-edit" onclick="editSchedule('${item.id}')">編集</button>
+                        <button class="btn-delete" onclick="deleteSchedule('${item.id}')">削除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // モーダル開く
+        window.openModal = function() {
+            editingId = null;
+            document.getElementById('modal-title').textContent = '新規講習を追加';
+            document.getElementById('schedule-form').reset();
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        // モーダル閉じる
+        window.closeModal = function() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            editingId = null;
+        }
+        
+        // 編集
+        window.editSchedule = function(id) {
+            const item = schedules.find(s => s.id === id);
+            if (!item) return;
+            
+            editingId = id;
+            document.getElementById('modal-title').textContent = '講習を編集';
+            document.getElementById('courseName').value = item.courseName;
+            document.getElementById('month').value = item.month;
+            document.getElementById('dayStart').value = item.dayStart;
+            document.getElementById('dayEnd').value = item.dayEnd;
+            document.getElementById('status').value = item.status;
+            
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        
+        // 保存
+        window.saveSchedule = async function(e) {
+            e.preventDefault();
+            
+            const courseName = document.getElementById('courseName').value;
+            const month = parseInt(document.getElementById('month').value);
+            const dayStart = parseInt(document.getElementById('dayStart').value);
+            const dayEnd = parseInt(document.getElementById('dayEnd').value);
+            const status = document.getElementById('status').value;
+            const date = `${month}/${dayStart} - ${month}/${dayEnd}`;
+            
+            const data = {
+                courseName,
+                month,
+                dayStart,
+                dayEnd,
+                status,
+                date
+            };
+            
+            try {
+                if (editingId) {
+                    // 更新
+                    await updateDoc(doc(db, "schedules", editingId), data);
+                    console.log("✅ 更新成功");
+                } else {
+                    // 追加
+                    await addDoc(collection(db, "schedules"), data);
+                    console.log("✅ 追加成功");
+                }
+                
+                closeModal();
+            } catch (error) {
+                console.error("❌ 保存エラー:", error);
+                alert("保存に失敗しました");
+            }
+        }
+        
+        // 削除
+        window.deleteSchedule = async function(id) {
+            if (!confirm('この講習を削除してもよろしいですか？')) return;
+            
+            try {
+                await deleteDoc(doc(db, "schedules", id));
+                console.log("✅ 削除成功");
+            } catch (error) {
+                console.error("❌ 削除エラー:", error);
+                alert("削除に失敗しました");
+            }
+        }
+        
+        // 同期状態表示
+        function updateSyncStatus() {
+            const status = document.getElementById('sync-status');
+            status.classList.remove('syncing');
+            status.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>Firestore と同期済み（${schedules.length}件）</span>
+            `;
+        }
+    </script>
+</body>
+</html>
