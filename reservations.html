@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約受付管理 | STC 管理画面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
+        
+        * {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        
+        .font-en {
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0b1120 0%, #1a2a4a 100%);
+            color: #f1f5f9;
+        }
+        
+        .sidebar {
+            background: rgba(15, 23, 42, 0.9);
+            border-right: 1px solid rgba(56, 189, 248, 0.2);
+            min-height: 100vh;
+            padding: 30px 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+        }
+        
+        .sidebar-logo {
+            margin-bottom: 40px;
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        
+        .sidebar-title {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #38bdf8;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-subtitle {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: bold;
+        }
+        
+        .nav-menu {
+            list-style: none;
+        }
+        
+        .nav-item {
+            margin-bottom: 10px;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 20px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-link:hover {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            border-left-color: #38bdf8;
+        }
+        
+        .nav-link.active {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border-left-color: #38bdf8;
+        }
+        
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+        }
+        
+        .main-content {
+            margin-left: 280px;
+            padding: 40px;
+        }
+        
+        .header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-style: italic;
+        }
+        
+        .page-subtitle {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            font-weight: bold;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        
+        .table-container {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 40px;
+        }
+        
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .admin-table thead {
+            background: rgba(56, 189, 248, 0.1);
+            border-bottom: 2px solid rgba(56, 189, 248, 0.3);
+        }
+        
+        .admin-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 900;
+            color: #38bdf8;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            font-style: italic;
+        }
+        
+        .admin-table td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+            font-weight: bold;
+        }
+        
+        .admin-table tbody tr:hover {
+            background: rgba(56, 189, 248, 0.05);
+        }
+        
+        .btn-detail {
+            background: #38bdf8;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            font-size: 0.75rem;
+        }
+        
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            font-size: 0.75rem;
+            margin-left: 5px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+                padding: 20px;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- サイドバー -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-title">STC</div>
+            <div class="sidebar-subtitle">管理画面</div>
+        </div>
+        
+        <nav>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link">
+                        <span class="nav-icon"><i class="fas fa-home"></i></span>
+                        <span>ダッシュボード</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="schedule.html" class="nav-link">
+                        <span class="nav-icon"><i class="fas fa-calendar"></i></span>
+                        <span>スケジュール管理</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="reservations.html" class="nav-link active">
+                        <span class="nav-icon"><i class="fas fa-users"></i></span>
+                        <span>予約受付管理</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="documents.html" class="nav-link">
+                        <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
+                        <span>書類作成管理</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- メインコンテンツ -->
+    <div class="main-content">
+        <div class="header">
+            <h1 class="page-title">予約受付管理</h1>
+            <p class="page-subtitle">申し込まれた予約情報を確認・管理します</p>
+        </div>
+        
+        <!-- テーブル -->
+        <div class="table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>申込日時</th>
+                        <th>お名前</th>
+                        <th>メール</th>
+                        <th>電話</th>
+                        <th>講習コース</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="reservations-list">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #64748b;">
+                            データを読み込み中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 空の状態 -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <p style="font-size: 1.125rem; font-weight: bold;">予約がありません</p>
+            <p style="font-size: 0.875rem; margin-top: 10px;">新しい予約が入ると表示されます</p>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrFI1MkCKdIT4mpzZWKdNPJZt3Gpyw",
+            authDomain: "stc-hp.firebaseapp.com",
+            projectId: "stc-hp",
+            storageBucket: "stc-hp.firebasestorage.app",
+            messagingSenderId: "795332931918",
+            appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        signInAnonymously(auth).then(() => {
+            onSnapshot(collection(db, "reservations"), (snapshot) => {
+                const tbody = document.getElementById('reservations-list');
+                const emptyState = document.getElementById('empty-state');
+                
+                if (snapshot.docs.length === 0) {
+                    tbody.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                
+                emptyState.style.display = 'none';
+                tbody.innerHTML = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const createdAt = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString('ja-JP') : '-';
+                    
+                    return `
+                        <tr>
+                            <td>${createdAt}</td>
+                            <td>${data.userName}</td>
+                            <td>${data.email}</td>
+                            <td>${data.phone}</td>
+                            <td>${data.courseId}</td>
+                            <td>
+                                <button class="btn-detail" onclick="alert('詳細表示機能は今後実装')">詳細</button>
+                                <button class="btn-delete" onclick="deleteReservation('${doc.id}')">削除</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            });
+        });
+        
+        window.deleteReservation = async function(id) {
+            if (!confirm('この予約を削除してもよろしいですか？')) return;
+            
+            try {
+                await deleteDoc(doc(db, "reservations", id));
+                console.log("✅ 削除成功");
+            } catch (error) {
+                console.error("❌ 削除エラー:", error);
+                alert("削除に失敗しました");
+            }
+        }
+    </script>
+</body>
+</html>
