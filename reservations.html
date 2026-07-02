@@ -6,6 +6,10 @@
     <title>予約受付管理 | STC 管理画面</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- 共通CSS -->
+    <link rel="stylesheet" href="css/common.css">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
         
@@ -20,17 +24,6 @@
         body {
             background: linear-gradient(135deg, #0b1120 0%, #1a2a4a 100%);
             color: #f1f5f9;
-        }
-        
-        .sidebar {
-            background: rgba(15, 23, 42, 0.9);
-            border-right: 1px solid rgba(56, 189, 248, 0.2);
-            min-height: 100vh;
-            padding: 30px 20px;
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 280px;
         }
         
         .sidebar-logo {
@@ -92,11 +85,6 @@
         .nav-icon {
             width: 20px;
             text-align: center;
-        }
-        
-        .main-content {
-            margin-left: 280px;
-            padding: 40px;
         }
         
         .header {
@@ -202,22 +190,6 @@
             margin-bottom: 20px;
             opacity: 0.5;
         }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                border-right: none;
-                border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-                padding: 20px;
-            }
-            
-            .main-content {
-                margin-left: 0;
-                padding: 20px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -304,7 +276,7 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         
         const firebaseConfig = {
-            apiKey: "AIzaSyCrFI1MkCKdIT4mpzZWKdNPJZt3Gpyw",
+            apiKey: "AIzaSyCrFI1MMkCKdIT4mpz2MWdNPJZt3GpYw",
             authDomain: "stc-hp.firebaseapp.com",
             projectId: "stc-hp",
             storageBucket: "stc-hp.firebasestorage.app",
@@ -361,5 +333,8 @@
             }
         }
     </script>
+    
+    <!-- 共通JavaScript -->
+    <script src="js/common.js"></script>
 </body>
 </html>
