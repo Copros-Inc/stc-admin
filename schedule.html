@@ -154,7 +154,7 @@
             display: inline-block;
         }
         
-        .status-ok {
+        .status-available {
             background: rgba(16, 185, 129, 0.2);
             color: #10b981;
             border: 1px solid #10b981;
@@ -362,6 +362,16 @@
             width: 20px;
             text-align: center;
         }
+
+        .capacity-info {
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 3px solid #38bdf8;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+        }
     </style>
 </head>
 <body>
@@ -434,13 +444,14 @@
                             <th>開始日</th>
                             <th>終了日</th>
                             <th>表示日付</th>
+                            <th>定員 / 予約</th>
                             <th>ステータス</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="schedule-list">
                         <tr>
-                            <td colspan="7" style="text-align: center; color: #64748b;">
+                            <td colspan="8" style="text-align: center; color: #64748b;">
                                 データを読み込み中...
                             </td>
                         </tr>
@@ -467,7 +478,16 @@
             <form id="schedule-form" onsubmit="saveSchedule(event)">
                 <div class="form-group">
                     <label class="form-label">講習コース名 *</label>
-                    <input type="text" id="courseName" class="form-input" placeholder="例：玉掛け技能講習" required>
+                    <select id="courseId" class="form-select" onchange="updateCapacity()" required>
+                        <option value="">選択してください</option>
+                        <option value="玉掛け技能講習">玉掛け技能講習</option>
+                        <option value="小型移動式クレーン">小型移動式クレーン</option>
+                        <option value="フォークリフト（11H）">フォークリフト（11H）</option>
+                        <option value="フォークリフト（31H）">フォークリフト（31H）</option>
+                        <option value="フルハーネス特別教育">フルハーネス特別教育</option>
+                        <option value="テールゲートリフター特別教育">テールゲートリフター特別教育</option>
+                    </select>
+                    <div id="capacity-info" class="capacity-info" style="display: none;"></div>
                 </div>
                 
                 <div class="form-group">
@@ -493,15 +513,10 @@
                         <input type="number" id="dayEnd" class="form-input" placeholder="22" min="1" max="31" required>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
-                    <label class="form-label">ステータス *</label>
-                    <select id="status" class="form-select" required>
-                        <option value="">選択してください</option>
-                        <option value="ok">空席あり</option>
-                        <option value="full">満員御礼</option>
-                        <option value="cancel">中止</option>
-                    </select>
+                    <label class="form-label">定員人数 *</label>
+                    <input type="number" id="capacity" class="form-input" placeholder="10" min="1" required readonly>
                 </div>
                 
                 <div class="form-buttons">
@@ -529,6 +544,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        
+        // 講習ごとの定員設定
+        const capacityMap = {
+            "玉掛け技能講習": 10,
+            "小型移動式クレーン": 10,
+            "フォークリフト（11H）": 15,
+            "フォークリフト（31H）": 12,
+            "フルハーネス特別教育": 8,
+            "テールゲートリフター特別教育": 6
+        };
         
         let schedules = [];
         let editingId = null;
@@ -568,16 +593,33 @@
             }
             
             emptyState.style.display = 'none';
-            tbody.innerHTML = schedules.map(item => `
+            tbody.innerHTML = schedules.map(item => {
+                const reserved = item.reserved || 0;
+                const capacity = item.capacity || 10;
+                const available = capacity - reserved;
+                let statusClass = 'status-available';
+                let statusText = `空席 ${available}`;
+                
+                if (available <= 0) {
+                    statusClass = 'status-full';
+                    statusText = '満員';
+                }
+                if (item.status === 'cancel') {
+                    statusClass = 'status-cancel';
+                    statusText = '中止';
+                }
+                
+                return `
                 <tr>
                     <td>${item.courseName}</td>
                     <td>${item.month}月</td>
                     <td>${item.dayStart}日</td>
                     <td>${item.dayEnd}日</td>
                     <td>${item.date}</td>
+                    <td>${reserved} / ${capacity}</td>
                     <td>
-                        <span class="status-badge status-${item.status}">
-                            ${item.status === 'ok' ? '空席あり' : item.status === 'full' ? '満員' : '中止'}
+                        <span class="status-badge ${statusClass}">
+                            ${statusText}
                         </span>
                     </td>
                     <td>
@@ -585,7 +627,23 @@
                         <button class="btn-delete" onclick="deleteSchedule('${item.id}')">削除</button>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
+        }
+        
+        // 定員を自動入力
+        window.updateCapacity = function() {
+            const courseId = document.getElementById('courseId').value;
+            const capacityInput = document.getElementById('capacity');
+            const capacityInfo = document.getElementById('capacity-info');
+            
+            if (capacityMap[courseId]) {
+                capacityInput.value = capacityMap[courseId];
+                capacityInfo.innerHTML = `✓ ${courseId}の定員は${capacityMap[courseId]}人です`;
+                capacityInfo.style.display = 'block';
+            } else {
+                capacityInput.value = '';
+                capacityInfo.style.display = 'none';
+            }
         }
         
         // モーダル開く
@@ -593,6 +651,7 @@
             editingId = null;
             document.getElementById('modal-title').textContent = '新規講習を追加';
             document.getElementById('schedule-form').reset();
+            document.getElementById('capacity-info').style.display = 'none';
             document.getElementById('modal-overlay').classList.add('active');
         }
         
@@ -609,11 +668,12 @@
             
             editingId = id;
             document.getElementById('modal-title').textContent = '講習を編集';
-            document.getElementById('courseName').value = item.courseName;
+            document.getElementById('courseId').value = item.courseName;
             document.getElementById('month').value = item.month;
             document.getElementById('dayStart').value = item.dayStart;
             document.getElementById('dayEnd').value = item.dayEnd;
-            document.getElementById('status').value = item.status;
+            document.getElementById('capacity').value = item.capacity;
+            updateCapacity();
             
             document.getElementById('modal-overlay').classList.add('active');
         }
@@ -622,11 +682,11 @@
         window.saveSchedule = async function(e) {
             e.preventDefault();
             
-            const courseName = document.getElementById('courseName').value;
+            const courseName = document.getElementById('courseId').value;
             const month = parseInt(document.getElementById('month').value);
             const dayStart = parseInt(document.getElementById('dayStart').value);
             const dayEnd = parseInt(document.getElementById('dayEnd').value);
-            const status = document.getElementById('status').value;
+            const capacity = parseInt(document.getElementById('capacity').value);
             const date = `${month}/${dayStart} - ${month}/${dayEnd}`;
             
             const data = {
@@ -634,8 +694,10 @@
                 month,
                 dayStart,
                 dayEnd,
-                status,
-                date
+                capacity,
+                reserved: 0,
+                date,
+                status: 'ok'
             };
             
             try {
