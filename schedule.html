@@ -6,758 +6,195 @@
     <title>STC 管理画面 | 講習スケジュール管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- 共通CSS -->
-    <link rel="stylesheet" href="css/common.css">
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
         
-        * {
-            font-family: 'Noto Sans JP', sans-serif;
-        }
+        * { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0b1120; color: #f1f5f9; display: flex; min-height: 100vh; }
         
-        .font-en {
-            font-family: 'Montserrat', sans-serif;
-        }
+        /* サイドバー：画像のデザインを再現 */
+        .sidebar { width: 260px; background: #0f172a; border-right: 1px solid rgba(56, 189, 248, 0.1); padding: 40px 20px; flex-shrink: 0; }
+        .sidebar-logo { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; letter-spacing: -0.05em; }
+        .sidebar-subtitle { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: bold; margin-top: 4px; }
         
-        body {
-            background: linear-gradient(135deg, #0b1120 0%, #1a2a4a 100%);
-            color: #f1f5f9;
-        }
+        .nav-link { display: flex; align-items: center; gap: 15px; padding: 14px 20px; color: #94a3b8; text-decoration: none; border-radius: 12px; font-weight: 700; transition: all 0.3s; margin-bottom: 8px; font-size: 0.9rem; }
+        .nav-link i { width: 20px; text-align: center; font-size: 1.1rem; }
+        .nav-link:hover { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+        .nav-link.active { background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.05) 100%); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
         
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
+        /* メインコンテンツ */
+        .main-content { flex-grow: 1; padding: 60px; overflow-y: auto; background: radial-gradient(circle at top right, #1e293b, #0b1120); }
         
-        .admin-header {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-        
-        .admin-title {
-            font-size: 2.5rem;
-            font-weight: 900;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-style: italic;
-        }
-        
-        .admin-subtitle {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            font-weight: bold;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-weight: 900;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
-            text-transform: uppercase;
-            font-size: 0.875rem;
-            letter-spacing: 0.1em;
-            font-style: italic;
-            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.3);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(14, 165, 233, 0.5);
-        }
-        
-        .btn-edit {
-            background: #38bdf8;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            font-size: 0.75rem;
-            margin-right: 5px;
-        }
-        
-        .btn-delete {
-            background: #ef4444;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            font-size: 0.75rem;
-        }
-        
-        .table-container {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            margin-bottom: 40px;
-        }
-        
-        .admin-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .admin-table thead {
-            background: rgba(56, 189, 248, 0.1);
-            border-bottom: 2px solid rgba(56, 189, 248, 0.3);
-        }
-        
-        .admin-table th {
-            padding: 15px;
-            text-align: left;
-            font-weight: 900;
-            color: #38bdf8;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.1em;
-            font-style: italic;
-        }
-        
-        .admin-table td {
-            padding: 15px;
-            border-bottom: 1px solid rgba(56, 189, 248, 0.1);
-            font-weight: bold;
-        }
-        
-        .admin-table tbody tr:hover {
-            background: rgba(56, 189, 248, 0.05);
-        }
-        
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            display: inline-block;
-        }
-        
-        .status-available {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            border: 1px solid #10b981;
-        }
-        
-        .status-full {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            border: 1px solid #ef4444;
-        }
-        
-        .status-cancel {
-            background: rgba(107, 114, 128, 0.2);
-            color: #9ca3af;
-            border: 1px solid #9ca3af;
-        }
-        
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .modal-overlay.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: #0f172a;
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-        
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-            color: #38bdf8;
-            font-style: italic;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 900;
-            color: #38bdf8;
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .form-input,
-        .form-select {
-            width: 100%;
-            padding: 12px;
-            background: rgba(100, 116, 139, 0.1);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 8px;
-            color: #f1f5f9;
-            font-weight: bold;
-            font-size: 0.875rem;
-        }
-        
-        .form-input:focus,
-        .form-select:focus {
-            outline: none;
-            border-color: #38bdf8;
-            background: rgba(56, 189, 248, 0.1);
-        }
-        
-        .form-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 30px;
-        }
-        
-        .btn-submit {
-            flex: 1;
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 900;
-            cursor: pointer;
-            border: none;
-            text-transform: uppercase;
-            font-size: 0.875rem;
-        }
-        
-        .btn-cancel {
-            flex: 1;
-            background: rgba(107, 114, 128, 0.3);
-            color: #cbd5e1;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 900;
-            cursor: pointer;
-            border: 1px solid rgba(107, 114, 128, 0.5);
-            text-transform: uppercase;
-            font-size: 0.875rem;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #64748b;
-        }
-        
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-        
-        .sync-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 8px;
-            color: #10b981;
-            font-size: 0.875rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        
-        .sync-indicator.syncing {
-            background: rgba(56, 189, 248, 0.1);
-            border-color: rgba(56, 189, 248, 0.3);
-            color: #38bdf8;
-        }
+        /* ヘッダーカード */
+        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; margin-bottom: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        .admin-title { font-size: 3rem; font-weight: 900; font-style: italic; color: #38bdf8; text-transform: uppercase; letter-spacing: -0.02em; margin-bottom: 10px; }
+        .admin-subtitle { font-size: 0.8rem; color: #64748b; font-weight: 900; text-transform: uppercase; tracking-widest: 0.2em; }
 
-        .sidebar-logo {
-            margin-bottom: 40px;
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-        }
+        /* テーブル */
+        .table-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
+        .admin-table { width: 100%; border-collapse: collapse; }
+        .admin-table th { padding: 18px 20px; text-align: left; font-weight: 900; color: #38bdf8; text-transform: uppercase; font-size: 0.7rem; background: rgba(56, 189, 248, 0.05); border-bottom: 1px solid rgba(56, 189, 248, 0.2); }
+        .admin-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 700; font-size: 0.85rem; }
         
-        .sidebar-title {
-            font-size: 1.25rem;
-            font-weight: 900;
-            color: #38bdf8;
-            font-style: italic;
-            margin-bottom: 5px;
-        }
-        
-        .sidebar-subtitle {
-            font-size: 0.75rem;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-weight: bold;
-        }
-        
-        .nav-menu {
-            list-style: none;
-        }
-        
-        .nav-item {
-            margin-bottom: 10px;
-        }
-        
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 15px 20px;
-            color: #cbd5e1;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
-        
-        .nav-link:hover {
-            background: rgba(56, 189, 248, 0.1);
-            color: #38bdf8;
-            border-left-color: #38bdf8;
-        }
-        
-        .nav-link.active {
-            background: rgba(56, 189, 248, 0.2);
-            color: #38bdf8;
-            border-left-color: #38bdf8;
-        }
-        
-        .nav-icon {
-            width: 20px;
-            text-align: center;
-        }
+        .status-badge { padding: 4px 12px; border-radius: 99px; font-size: 0.7rem; font-weight: 900; border: 1px solid currentColor; }
+        .status-ok { background: rgba(16, 185, 129, 0.1); color: #10b981; }
 
-        .capacity-info {
-            background: rgba(56, 189, 248, 0.1);
-            border-left: 3px solid #38bdf8;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 8px;
-            font-size: 0.875rem;
-            color: #cbd5e1;
-        }
+        /* ボタン */
+        .btn-add { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 12px 30px; border-radius: 50px; font-weight: 900; border: none; cursor: pointer; transition: all 0.3s; font-style: italic; }
+        .btn-edit { background: #38bdf8; color: white; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; border: none; margin-right: 5px; cursor: pointer; }
+        .btn-delete { background: #ef4444; color: white; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; border: none; cursor: pointer; }
+
+        /* モーダル */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #0f172a; border: 1px solid #38bdf8; border-radius: 24px; padding: 40px; width: 90%; max-width: 500px; }
+        .form-select option { color: #000 !important; background: #fff !important; }
+        .input-field { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: 10px; color: #fff; font-weight: bold; margin-bottom: 20px; outline: none; }
     </style>
 </head>
 <body>
-    <!-- サイドバー -->
     <div class="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-title">STC</div>
             <div class="sidebar-subtitle">管理画面</div>
         </div>
-        
         <nav>
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="index.html" class="nav-link">
-                        <span class="nav-icon"><i class="fas fa-home"></i></span>
-                        <span>ダッシュボード</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="schedule.html" class="nav-link active">
-                        <span class="nav-icon"><i class="fas fa-calendar"></i></span>
-                        <span>スケジュール管理</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="reservations.html" class="nav-link">
-                        <span class="nav-icon"><i class="fas fa-users"></i></span>
-                        <span>予約受付管理</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="documents.html" class="nav-link">
-                        <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
-                        <span>書類作成管理</span>
-                    </a>
-                </li>
-            </ul>
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> <span>ダッシュボード</span></a>
+            <a href="schedule.html" class="nav-link active"><i class="fas fa-calendar-alt"></i> <span>スケジュール管理</span></a>
+            <a href="reservations.html" class="nav-link"><i class="fas fa-users"></i> <span>予約受付管理</span></a>
+            <a href="documents.html" class="nav-link"><i class="fas fa-file-alt"></i> <span>書類作成管理</span></a>
         </nav>
     </div>
     
-    <!-- メインコンテンツ -->
     <div class="main-content">
-        <div class="admin-container">
-            <!-- ヘッダー -->
-            <div class="admin-header">
-                <h1 class="admin-title">STC 管理画面</h1>
-                <p class="admin-subtitle">講習スケジュール管理システム</p>
-            </div>
-            
-            <!-- 同期状態インジケーター -->
-            <div id="sync-status" class="sync-indicator">
-                <i class="fas fa-check-circle"></i>
-                <span>Firestore と同期中...</span>
-            </div>
-            
-            <!-- 追加ボタン -->
-            <div style="margin-bottom: 30px;">
-                <button class="btn-primary" onclick="openModal()">
-                    <i class="fas fa-plus mr-2"></i> 新規講習を追加
-                </button>
-            </div>
-            
-            <!-- テーブル -->
-            <div class="table-container">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>講習コース</th>
-                            <th>開催月</th>
-                            <th>開始日</th>
-                            <th>終了日</th>
-                            <th>表示日付</th>
-                            <th>定員 / 予約</th>
-                            <th>ステータス</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="schedule-list">
-                        <tr>
-                            <td colspan="8" style="text-align: center; color: #64748b;">
-                                データを読み込み中...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- 空の状態 -->
-            <div id="empty-state" class="empty-state" style="display: none;">
-                <div class="empty-state-icon">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <p style="font-size: 1.125rem; font-weight: bold;">講習予定がありません</p>
-                <p style="font-size: 0.875rem; margin-top: 10px;">「新規講習を追加」ボタンから追加してください</p>
-            </div>
+        <div class="admin-header text-left">
+            <h1 class="admin-title">STC 管理画面</h1>
+            <p class="admin-subtitle tracking-widest">講習スケジュール管理システム</p>
+        </div>
+        
+        <div class="flex justify-between items-center mb-8">
+            <div id="sync-status" class="text-xs font-bold text-emerald-400 italic">Firestore と同期済み</div>
+            <button class="btn-add shadow-lg shadow-sky-500/20" onclick="openModal()"><i class="fas fa-plus mr-2"></i> 新規講習を追加</button>
+        </div>
+        
+        <div class="table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr><th>講習コース</th><th>開催月</th><th>開始日</th><th>終了日</th><th>表示日付</th><th>定員/予約</th><th>ステータス</th><th>操作</th></tr>
+                </thead>
+                <tbody id="schedule-list"></tbody>
+            </table>
         </div>
     </div>
-    
-    <!-- モーダル -->
+
     <div id="modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <h2 class="modal-title" id="modal-title">新規講習を追加</h2>
-            
+        <div class="modal-content text-left">
+            <h2 class="text-2xl font-black text-sky-400 italic mb-8 uppercase">Edit Schedule</h2>
             <form id="schedule-form" onsubmit="saveSchedule(event)">
-                <div class="form-group">
-                    <label class="form-label">講習コース名 *</label>
-                    <select id="courseId" class="form-select" onchange="updateCapacity()" required>
-                        <option value="">選択してください</option>
-                        <option value="玉掛け技能講習">玉掛け技能講習</option>
-                        <option value="小型移動式クレーン">小型移動式クレーン</option>
-                        <option value="フォークリフト（11H）">フォークリフト（11H）</option>
-                        <option value="フォークリフト（31H）">フォークリフト（31H）</option>
-                        <option value="フルハーネス特別教育">フルハーネス特別教育</option>
-                        <option value="テールゲートリフター特別教育">テールゲートリフター特別教育</option>
-                    </select>
-                    <div id="capacity-info" class="capacity-info" style="display: none;"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">開催月 *</label>
-                    <select id="month" class="form-select" required>
-                        <option value="">選択してください</option>
-                        <option value="4">4月</option>
-                        <option value="5">5月</option>
-                        <option value="6">6月</option>
-                        <option value="7">7月</option>
-                        <option value="8">8月</option>
-                        <option value="9">9月</option>
-                        <option value="10">10月</option>
-                        <option value="11">11月</option>
-                        <option value="12">12月</option>
-                        <option value="1">1月</option>
-                        <option value="2">2月</option>
-                        <option value="3">3月</option>
-                    </select>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
-                        <label class="form-label">開始日 *</label>
-                        <input type="number" id="dayStart" class="form-input" placeholder="20" min="1" max="31" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">終了日 *</label>
-                        <input type="number" id="dayEnd" class="form-input" placeholder="22" min="1" max="31" required>
-                    </div>
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Course Name</label>
+                <select id="courseId" class="input-field form-select" required>
+                    <option value="">選択してください</option>
+                    <option value="玉掛け技能講習">玉掛け技能講習</option>
+                    <option value="小型移動式クレーン">小型移動式クレーン</option>
+                    <option value="フォークリフト（11H）">フォークリフト（11H）</option>
+                    <option value="フォークリフト（31H）">フォークリフト（31H）</option>
+                    <option value="フルハーネス特別教育">フルハーネス特別教育</option>
+                    <option value="テールゲートリフター特別教育">テールゲートリフター特別教育</option>
+                </select>
+
+                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Month</label>
+                <select id="month" class="input-field form-select" required>
+                    <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+                </select>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase">Start Day</label><input type="text" id="dayStart" class="input-field" placeholder="26,30" required></div>
+                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase">End Day</label><input type="number" id="dayEnd" class="input-field" placeholder="30"></div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">定員人数 *</label>
-                    <input type="number" id="capacity" class="form-input" placeholder="10" min="1" required readonly>
-                </div>
+                <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase">Capacity</label>
+                <input type="number" id="capacity" class="input-field" placeholder="10">
                 
-                <div class="form-buttons">
-                    <button type="submit" class="btn-submit">保存</button>
-                    <button type="button" class="btn-cancel" onclick="closeModal()">キャンセル</button>
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" class="flex-1 bg-sky-500 py-4 rounded-xl font-black uppercase text-sm">Save</button>
+                    <button type="button" onclick="closeModal()" class="flex-1 bg-slate-700 py-4 rounded-xl font-black uppercase text-sm">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
-    
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         
-        const firebaseConfig = {
-            apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw",
-            authDomain: "stc-hp.firebaseapp.com",
-            projectId: "stc-hp",
-            storageBucket: "stc-hp.firebasestorage.app",
-            messagingSenderId: "795332931918",
-            appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f"
-        };
-        
+        const firebaseConfig = { apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         
-        // 講習ごとの定員設定
-        const capacityMap = {
-            "玉掛け技能講習": 8,
-            "小型移動式クレーン": 6,
-            "フォークリフト（11H）": 10,
-            "フォークリフト（31H）": 10,
-            "フルハーネス特別教育": 10,
-            "テールゲートリフター特別教育": 10
-        };
-
-        const courseColors = {
-  　　　　  "玉掛け技能講習": "#0ea5e9",
- 　　　　   "小型移動式クレーン": "#ec4899",
- 　　　　   "フォークリフト（11H）": "#10b981",
-   　　　　 "フォークリフト（31H）": "#10b981",
-    　　　　"フルハーネス特別教育": "#f59e0b",
-  　　　　  "テールゲートリフター特別教育": "#8b5cf6"
-　　　　};
-        
-    　　 let schedules = [];
+        let schedules = [];
         let editingId = null;
-        
-        // 認証
-        signInAnonymously(auth)
-            .then(() => {
-                console.log("✅ 管理画面：認証成功");
-                loadSchedules();
-            })
-            .catch((error) => {
-                console.error("❌ 認証エラー:", error);
-            });
-        
-        // データ読み込み
-        function loadSchedules() {
+
+        signInAnonymously(auth).then(() => {
             onSnapshot(collection(db, "schedules"), (snapshot) => {
-                schedules = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                
-                renderTable();
-                updateSyncStatus();
+                schedules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const tbody = document.getElementById('schedule-list');
+                tbody.innerHTML = schedules.map(item => {
+                    const avail = (item.capacity || 10) - (item.reserved || 0);
+                    return `<tr>
+                        <td class="text-sky-400 font-black italic">${item.courseName}</td>
+                        <td>${item.month}月</td>
+                        <td>${item.dayStart}日</td>
+                        <td>${item.dayEnd}日</td>
+                        <td class="text-slate-400">${item.date}</td>
+                        <td>${item.reserved || 0} / ${item.capacity || 10}</td>
+                        <td><span class="status-badge status-ok">空席 ${avail}</span></td>
+                        <td>
+                            <button class="btn-edit" onclick="editSchedule('${item.id}')">編集</button>
+                            <button class="btn-delete" onclick="deleteSchedule('${item.id}')">削除</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+                document.getElementById('sync-status').innerText = `Firestore 同期済み（${schedules.length}件）`;
             });
-        }
-        
-        // テーブル表示
-        function renderTable() {
-            const tbody = document.getElementById('schedule-list');
-            const emptyState = document.getElementById('empty-state');
-            
-            if (schedules.length === 0) {
-                tbody.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
-            }
-            
-            emptyState.style.display = 'none';
-            tbody.innerHTML = schedules.map(item => {
-                const reserved = item.reserved || 0;
-                const capacity = item.capacity || 10;
-                const available = capacity - reserved;
-                let statusClass = 'status-available';
-                let statusText = `空席 ${available}`;
-                
-                if (available <= 0) {
-                    statusClass = 'status-full';
-                    statusText = '満員';
-                }
-                if (item.status === 'cancel') {
-                    statusClass = 'status-cancel';
-                    statusText = '中止';
-                }
-                
-                return `
-                <tr>
-                    <td>${item.courseName}</td>
-                    <td>${item.month}月</td>
-                    <td>${item.dayStart}日</td>
-                    <td>${item.dayEnd}日</td>
-                    <td>${item.date}</td>
-                    <td>${reserved} / ${capacity}</td>
-                    <td>
-                        <span class="status-badge ${statusClass}">
-                            ${statusText}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn-edit" onclick="editSchedule('${item.id}')">編集</button>
-                        <button class="btn-delete" onclick="deleteSchedule('${item.id}')">削除</button>
-                    </td>
-                </tr>
-            `}).join('');
-        }
-        
-        // 定員を自動入力
-        window.updateCapacity = function() {
-            const courseId = document.getElementById('courseId').value;
-            const capacityInput = document.getElementById('capacity');
-            const capacityInfo = document.getElementById('capacity-info');
-            
-            if (capacityMap[courseId]) {
-                capacityInput.value = capacityMap[courseId];
-                capacityInfo.innerHTML = `✓ ${courseId}の定員は${capacityMap[courseId]}人です`;
-                capacityInfo.style.display = 'block';
-            } else {
-                capacityInput.value = '';
-                capacityInfo.style.display = 'none';
-            }
-        }
-        
-        // モーダル開く
-        window.openModal = function() {
-            editingId = null;
-            document.getElementById('modal-title').textContent = '新規講習を追加';
-            document.getElementById('schedule-form').reset();
-            document.getElementById('capacity-info').style.display = 'none';
-            document.getElementById('modal-overlay').classList.add('active');
-        }
-        
-        // モーダル閉じる
-        window.closeModal = function() {
-            document.getElementById('modal-overlay').classList.remove('active');
-            editingId = null;
-        }
-        
-        // 編集
-        window.editSchedule = function(id) {
+        });
+
+        window.openModal = () => { editingId = null; document.getElementById('schedule-form').reset(); document.getElementById('modal-overlay').classList.add('active'); };
+        window.closeModal = () => { document.getElementById('modal-overlay').classList.remove('active'); };
+
+        window.editSchedule = (id) => {
             const item = schedules.find(s => s.id === id);
-            if (!item) return;
-            
             editingId = id;
-            document.getElementById('modal-title').textContent = '講習を編集';
             document.getElementById('courseId').value = item.courseName;
             document.getElementById('month').value = item.month;
             document.getElementById('dayStart').value = item.dayStart;
             document.getElementById('dayEnd').value = item.dayEnd;
             document.getElementById('capacity').value = item.capacity;
-            updateCapacity();
-            
             document.getElementById('modal-overlay').classList.add('active');
-        }
-        
-        // 保存
-        window.saveSchedule = async function(e) {
+        };
+
+        window.saveSchedule = async (e) => {
             e.preventDefault();
-            
-            const courseName = document.getElementById('courseId').value;
-            const month = parseInt(document.getElementById('month').value);
-            const dayStart = parseInt(document.getElementById('dayStart').value);
-            const dayEnd = parseInt(document.getElementById('dayEnd').value);
-            const capacity = parseInt(document.getElementById('capacity').value);
-            const date = `${month}/${dayStart} - ${month}/${dayEnd}`;
-            
+            const start = document.getElementById('dayStart').value;
+            const month = document.getElementById('month').value;
+            const end = document.getElementById('dayEnd').value;
             const data = {
-                courseName,
-                month,
-                dayStart,
-                dayEnd,
-                capacity,
-                reserved: 0,
-                date,
+                courseName: document.getElementById('courseId').value,
+                month: parseInt(month),
+                dayStart: start,
+                dayEnd: parseInt(end) || 0,
+                capacity: parseInt(document.getElementById('capacity').value),
+                date: start.includes(',') ? `${month}/${start}` : `${month}/${start}-${end}`,
                 status: 'ok'
             };
-            
-            try {
-                if (editingId) {
-                    // 更新
-                    await updateDoc(doc(db, "schedules", editingId), data);
-                    console.log("✅ 更新成功");
-                } else {
-                    // 追加
-                    await addDoc(collection(db, "schedules"), data);
-                    console.log("✅ 追加成功");
-                }
-                
-                closeModal();
-            } catch (error) {
-                console.error("❌ 保存エラー:", error);
-                alert("保存に失敗しました");
-            }
-        }
-        
-        // 削除
-        window.deleteSchedule = async function(id) {
-            if (!confirm('この講習を削除してもよろしいですか？')) return;
-            
-            try {
-                await deleteDoc(doc(db, "schedules", id));
-                console.log("✅ 削除成功");
-            } catch (error) {
-                console.error("❌ 削除エラー:", error);
-                alert("削除に失敗しました");
-            }
-        }
-        
-        // 同期状態表示
-        function updateSyncStatus() {
-            const status = document.getElementById('sync-status');
-            status.classList.remove('syncing');
-            status.innerHTML = `
-                <i class="fas fa-check-circle"></i>
-                <span>Firestore と同期済み（${schedules.length}件）</span>
-            `;
-        }
+            if (editingId) await updateDoc(doc(db, "schedules", editingId), data);
+            else await addDoc(collection(db, "schedules"), { ...data, reserved: 0 });
+            closeModal();
+        };
+
+        window.deleteSchedule = async (id) => { if(confirm("削除しますか？")) await deleteDoc(doc(db, "schedules", id)); };
     </script>
-    
-    <!-- 共通JavaScript -->
-    <script src="js/common.js"></script>
 </body>
 </html>
