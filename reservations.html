@@ -8,67 +8,55 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
-        
         * { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0b1120; color: #f1f5f9; display: flex; min-height: 100vh; }
         
-        /* サイドバー：デザイン統一 */
         .sidebar { width: 260px; background: #0f172a; border-right: 1px solid rgba(56, 189, 248, 0.1); padding: 40px 20px; flex-shrink: 0; }
         .sidebar-logo { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; letter-spacing: -0.05em; }
-        .sidebar-subtitle { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: bold; margin-top: 4px; }
+        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; }
+        .sidebar-subtitle { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: bold; }
         
         .nav-link { display: flex; align-items: center; gap: 15px; padding: 14px 20px; color: #94a3b8; text-decoration: none; border-radius: 12px; font-weight: 700; transition: all 0.3s; margin-bottom: 8px; font-size: 0.9rem; }
         .nav-link i { width: 20px; text-align: center; font-size: 1.1rem; }
         .nav-link:hover { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
         .nav-link.active { background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.05) 100%); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
         
-        /* メインコンテンツ */
         .main-content { flex-grow: 1; padding: 60px; overflow-y: auto; background: radial-gradient(circle at top right, #1e293b, #0b1120); }
-        
-        /* ヘッダーカード */
-        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; margin-bottom: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-        .admin-title { font-size: 3rem; font-weight: 900; font-style: italic; color: #38bdf8; text-transform: uppercase; letter-spacing: -0.02em; margin-bottom: 10px; }
+        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; margin-bottom: 40px; }
+        .admin-title { font-size: 3rem; font-weight: 900; font-style: italic; color: #38bdf8; text-transform: uppercase; margin-bottom: 10px; }
         .admin-subtitle { font-size: 0.8rem; color: #64748b; font-weight: 900; text-transform: uppercase; tracking-widest: 0.2em; }
 
-        /* テーブル */
         .table-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
         .admin-table { width: 100%; border-collapse: collapse; }
         .admin-table th { padding: 18px 20px; text-align: left; font-weight: 900; color: #38bdf8; text-transform: uppercase; font-size: 0.7rem; background: rgba(56, 189, 248, 0.05); border-bottom: 1px solid rgba(56, 189, 248, 0.2); }
         .admin-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 700; font-size: 0.85rem; }
         
-        /* モーダルスタイル（詳細表示用） */
         #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
-        .modal-content { background: #ffffff; color: #1e293b; width: 100%; max-width: 600px; border-radius: 30px; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; }
-        .detail-item { margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+        .modal-content { background: #ffffff; color: #1e293b; width: 100%; max-width: 700px; border-radius: 30px; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; }
+        .detail-card { background: #f8fafc; border-radius: 20px; padding: 25px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .detail-item { margin-bottom: 12px; }
         .detail-label { font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
-        .detail-value { font-weight: 800; color: #1e293b; font-size: 0.95rem; }
+        .detail-value { font-weight: 800; color: #1e293b; font-size: 0.9rem; }
         
-        .btn-detail { background: #38bdf8; color: white; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; border: none; cursor: pointer; font-weight: 900; }
-        .btn-delete { background: #ef4444; color: white; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; border: none; cursor: pointer; font-weight: 900; margin-left: 5px; }
+        .btn-detail { background: #38bdf8; color: white; padding: 8px 18px; border-radius: 8px; font-size: 0.75rem; border: none; cursor: pointer; font-weight: 900; }
+        .btn-delete { background: #ef4444; color: white; padding: 8px 18px; border-radius: 8px; font-size: 0.75rem; border: none; cursor: pointer; font-weight: 900; margin-left: 5px; }
+        .badge-mode { padding: 2px 8px; border-radius: 4px; font-size: 8px; text-transform: uppercase; margin-left: 10px; }
     </style>
 </head>
 <body>
-    <!-- モーダル（詳細表示用） -->
     <div id="detail-modal">
-        <div class="modal-content text-left animate-fadeIn">
-            <div class="flex justify-between items-center mb-8">
+        <div class="modal-content text-left">
+            <div class="flex justify-between items-center mb-8 border-b pb-4">
                 <h2 class="text-2xl font-black italic text-sky-600 uppercase">Reservation Detail</h2>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-900 text-2xl">&times;</button>
             </div>
             <div id="modal-body"></div>
-            <div class="mt-8 pt-6">
-                <button onclick="closeModal()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black italic uppercase text-sm">Close</button>
-            </div>
+            <button onclick="closeModal()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black italic uppercase text-sm mt-6">Close Window</button>
         </div>
     </div>
 
-    <!-- サイドバー -->
     <div class="sidebar">
-        <div class="sidebar-logo">
-            <div class="sidebar-title">STC</div>
-            <div class="sidebar-subtitle">管理画面</div>
-        </div>
+        <div class="sidebar-logo"><div class="sidebar-title">STC</div><div class="sidebar-subtitle">管理画面</div></div>
         <nav>
             <a href="index.html" class="nav-link"><i class="fas fa-home"></i> <span>ダッシュボード</span></a>
             <a href="schedule.html" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>スケジュール管理</span></a>
@@ -79,12 +67,12 @@
     
     <div class="main-content">
         <div class="admin-header text-left">
-            <h1 class="admin-title">Reservation</h1>
+            <h1 class="admin-title italic uppercase">Reservations</h1>
             <p class="admin-subtitle tracking-widest">予約受付管理システム</p>
         </div>
         
         <div class="flex justify-between items-center mb-8">
-            <div id="sync-status" class="text-xs font-bold text-emerald-400 italic">最新の申し込みを同期中...</div>
+            <div id="sync-status" class="text-xs font-bold text-emerald-400 italic">同期中...</div>
         </div>
         
         <div class="table-container">
@@ -93,15 +81,14 @@
                     <tr>
                         <th>申込日時</th>
                         <th>講習コース</th>
-                        <th>講習日</th>
+                        <th>日程</th>
                         <th>お名前</th>
                         <th>会社名</th>
+                        <th>電話番号</th>
                         <th>操作</th>
                     </tr>
                 </thead>
-                <tbody id="reservations-list">
-                    <tr><td colspan="6" class="text-center p-10 text-slate-500 font-bold italic">データを読み込み中...</td></tr>
-                </tbody>
+                <tbody id="reservations-list"></tbody>
             </table>
         </div>
     </div>
@@ -116,70 +103,83 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
         
-        let allReservations = [];
+        let allRes = [];
 
         signInAnonymously(auth).then(() => {
             const q = query(collection(db, "reservations"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
+                allRes = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 const tbody = document.getElementById('reservations-list');
-                allReservations = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                
-                if (allReservations.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-10">現在、予約はありません</td></tr>';
+                if (allRes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center p-10 text-slate-500">現在、予約はありません</td></tr>';
                     return;
                 }
-                
-                tbody.innerHTML = allReservations.map(res => {
-                    const createdAt = res.createdAt ? new Date(res.createdAt.toDate()).toLocaleString('ja-JP') : '-';
+                tbody.innerHTML = allRes.map(res => {
+                    const dt = res.createdAt ? new Date(res.createdAt.toDate()).toLocaleString('ja-JP') : '-';
                     return `
                         <tr>
-                            <td class="text-[10px] text-slate-400 font-en">${createdAt}</td>
+                            <td class="text-[10px] text-slate-400 font-en">${dt}</td>
                             <td class="text-sky-400 font-black italic">${res.courseName || '-'}</td>
                             <td class="text-[11px]">${res.courseDate || '-'}</td>
                             <td>${res.userName}</td>
                             <td class="text-xs text-slate-400">${res.company || '-'}</td>
-                            <td>
+                            <td class="font-en text-xs">${res.phone || '-'}</td>
+                            <td class="whitespace-nowrap">
                                 <button class="btn-detail" onclick="showDetail('${res.id}')">詳細</button>
-                                <button class="btn-delete" onclick="deleteReservation('${res.id}')">削除</button>
+                                <button class="btn-delete" onclick="deleteRes('${res.id}')">削除</button>
                             </td>
                         </tr>
                     `;
                 }).join('');
-                document.getElementById('sync-status').innerText = `Firestore 同期済み（${allReservations.length}件）`;
+                document.getElementById('sync-status').innerText = `Firestore 同期済み（${allRes.length}件）`;
             });
         });
 
         window.showDetail = function(id) {
-            const res = allReservations.find(r => r.id === id);
+            const res = allRes.find(r => r.id === id);
             if (!res) return;
-            const createdAt = res.createdAt ? new Date(res.createdAt.toDate()).toLocaleString('ja-JP') : '-';
-            
-            // 写真データの抽出（階層構造に対応）
-            const photoUser = res.photos?.user || res.photoUser || "";
+            const dt = res.createdAt ? new Date(res.createdAt.toDate()).toLocaleString('ja-JP') : '-';
+            const modeLabel = res.mode === 'simple' ? '<span class="bg-amber-100 text-amber-700 badge-mode font-black">予約のみ(紙)</span>' : '<span class="bg-emerald-100 text-emerald-700 badge-mode font-black">WEB本申込</span>';
             
             document.getElementById('modal-body').innerHTML = `
-                <div class="grid grid-cols-2 gap-x-6 gap-y-2">
-                    <div class="col-span-2 flex justify-center mb-6">
-                        ${photoUser ? `<img src="${photoUser}" class="w-28 h-36 object-cover rounded-xl shadow-lg border-2 border-slate-100">` : `<div class="w-28 h-36 bg-slate-100 flex items-center justify-center rounded-xl text-slate-400 text-[10px]">No Profile Photo</div>`}
+                <div class="space-y-4">
+                    <div class="flex gap-6 items-start detail-card">
+                        <div class="flex-shrink-0">
+                            ${res.photoUser || res.photos?.user ? `<img src="${res.photoUser || res.photos.user}" class="w-32 h-40 object-cover rounded-xl border shadow-md">` : `<div class="w-32 h-40 bg-slate-100 flex items-center justify-center rounded-xl text-slate-400 text-[10px]">No Photo</div>`}
+                        </div>
+                        <div class="flex-grow grid grid-cols-1 gap-2">
+                            <div class="detail-item"><div class="detail-label">希望講習 / 日程</div><div class="detail-value text-sky-600">${res.courseName} ${modeLabel}</div><div class="text-xs font-bold">${res.courseDate}</div></div>
+                            <div class="detail-item"><div class="detail-label">お名前</div><div class="detail-value text-lg">${res.userName}</div><div class="text-[10px] font-bold text-slate-400 uppercase">${res.userKana || ''}</div></div>
+                        </div>
                     </div>
-                    <div class="detail-item col-span-2"><div class="detail-label">希望講習 / 日程</div><div class="detail-value text-sky-600">${res.courseName}</div><div class="text-xs font-bold">${res.courseDate}</div></div>
-                    <div class="detail-item"><div class="detail-label">お名前</div><div class="detail-value">${res.userName}</div><div class="text-[10px] font-bold text-slate-400">${res.userKana || ''}</div></div>
-                    <div class="detail-item"><div class="detail-label">生年月日</div><div class="detail-value font-en">${res.birthDate || '-'}</div></div>
-                    <div class="detail-item"><div class="detail-label">電話番号</div><div class="detail-value font-en">${res.phone}</div></div>
-                    <div class="detail-item"><div class="detail-label">メール</div><div class="detail-value text-xs font-en">${res.email}</div></div>
-                    <div class="detail-item col-span-2"><div class="detail-label">現住所</div><div class="detail-value text-xs">${res.address || '-'}</div></div>
-                    <div class="detail-item"><div class="detail-label">会社名</div><div class="detail-value text-xs">${res.company || '-'}</div></div>
-                    <div class="detail-item"><div class="detail-label">申込種別</div><div class="detail-value text-[10px] uppercase font-black">${res.mode === 'simple' ? '⚠️ 予約のみ(紙持参)' : '✅ WEB本申込'}</div></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="detail-card"><div class="detail-label">生年月日</div><div class="detail-value font-en">${res.birthDate || '-'}</div></div>
+                        <div class="detail-card"><div class="detail-label">電話番号</div><div class="detail-value font-en">${res.phone}</div></div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label">住所 / メール</div>
+                        <div class="detail-value text-xs mb-1">〒${res.zip || ''} ${res.address || '-'}</div>
+                        <div class="detail-value text-xs font-en">${res.email || '-'}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label">勤務先情報</div>
+                        <div class="detail-value text-xs">${res.company || '個人'}</div>
+                        <div class="text-[10px] text-slate-500 font-bold mt-1">TEL: ${res.compPhone || '-'} / 〒${res.compZip || ''} ${res.compAddress || ''}</div>
+                    </div>
+                    ${res.mode !== 'simple' ? `
+                    <div class="detail-card bg-sky-50 border-sky-100">
+                        <div class="detail-label text-sky-600">免除条件・資格</div>
+                        <div class="detail-value text-xs">区分：${res.exType || res.f11 || '一般'}</div>
+                        <div class="detail-value text-xs mt-1">証本番号：${res.licenseNo || '-'}</div>
+                        <div class="detail-value text-[10px] text-slate-500 mt-1">保有：${res.licChecked || '-'}</div>
+                    </div>` : ''}
                 </div>
             `;
             document.getElementById('detail-modal').style.display = 'flex';
         }
 
         window.closeModal = () => { document.getElementById('detail-modal').style.display = 'none'; }
-        window.deleteReservation = async function(id) {
-            if (!confirm('この予約を完全に削除しますか？')) return;
-            try { await deleteDoc(doc(db, "reservations", id)); } catch (e) { alert("削除失敗"); }
-        }
+        window.deleteRes = async (id) => { if(confirm("削除しますか？")) await deleteDoc(doc(db, "reservations", id)); }
     </script>
 </body>
 </html>
