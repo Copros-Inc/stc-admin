@@ -6,57 +6,85 @@
     <title>予約受付管理 | STC 管理画面</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/common.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
-        * { font-family: 'Noto Sans JP', sans-serif; }
-        .font-en { font-family: 'Montserrat', sans-serif; }
-        body { background: linear-gradient(135deg, #0b1120 0%, #1a2a4a 100%); color: #f1f5f9; min-height: 100vh; }
         
-        /* テーブルスタイル */
-        .table-container { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }
+        * { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0b1120; color: #f1f5f9; display: flex; min-height: 100vh; }
+        
+        /* サイドバー：デザイン統一 */
+        .sidebar { width: 260px; background: #0f172a; border-right: 1px solid rgba(56, 189, 248, 0.1); padding: 40px 20px; flex-shrink: 0; }
+        .sidebar-logo { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; letter-spacing: -0.05em; }
+        .sidebar-subtitle { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: bold; margin-top: 4px; }
+        
+        .nav-link { display: flex; align-items: center; gap: 15px; padding: 14px 20px; color: #94a3b8; text-decoration: none; border-radius: 12px; font-weight: 700; transition: all 0.3s; margin-bottom: 8px; font-size: 0.9rem; }
+        .nav-link i { width: 20px; text-align: center; font-size: 1.1rem; }
+        .nav-link:hover { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+        .nav-link.active { background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.05) 100%); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
+        
+        /* メインコンテンツ */
+        .main-content { flex-grow: 1; padding: 60px; overflow-y: auto; background: radial-gradient(circle at top right, #1e293b, #0b1120); }
+        
+        /* ヘッダーカード */
+        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; margin-bottom: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        .admin-title { font-size: 3rem; font-weight: 900; font-style: italic; color: #38bdf8; text-transform: uppercase; letter-spacing: -0.02em; margin-bottom: 10px; }
+        .admin-subtitle { font-size: 0.8rem; color: #64748b; font-weight: 900; text-transform: uppercase; tracking-widest: 0.2em; }
+
+        /* テーブル */
+        .table-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
         .admin-table { width: 100%; border-collapse: collapse; }
-        .admin-table th { padding: 15px; text-align: left; font-weight: 900; color: #38bdf8; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; background: rgba(56, 189, 248, 0.1); }
-        .admin-table td { padding: 15px; border-bottom: 1px solid rgba(56, 189, 248, 0.1); font-weight: bold; font-size: 0.875rem; }
+        .admin-table th { padding: 18px 20px; text-align: left; font-weight: 900; color: #38bdf8; text-transform: uppercase; font-size: 0.7rem; background: rgba(56, 189, 248, 0.05); border-bottom: 1px solid rgba(56, 189, 248, 0.2); }
+        .admin-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 700; font-size: 0.85rem; }
         
-        /* モーダルスタイル */
-        #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: white; color: #1e293b; width: 100%; max-width: 600px; border-radius: 24px; max-height: 90vh; overflow-y: auto; padding: 40px; }
-        .detail-item { margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
-        .detail-label { font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
-        .detail-value { font-weight: bold; color: #1e293b; }
+        /* モーダルスタイル（詳細表示用） */
+        #detail-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
+        .modal-content { background: #ffffff; color: #1e293b; width: 100%; max-width: 600px; border-radius: 30px; max-height: 90vh; overflow-y: auto; padding: 40px; position: relative; }
+        .detail-item { margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+        .detail-label { font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
+        .detail-value { font-weight: 800; color: #1e293b; font-size: 0.95rem; }
         
-        .btn-detail { background: #38bdf8; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; }
-        .btn-delete { background: #ef4444; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 0.75rem; margin-left: 5px; }
+        .btn-detail { background: #38bdf8; color: white; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; border: none; cursor: pointer; font-weight: 900; }
+        .btn-delete { background: #ef4444; color: white; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; border: none; cursor: pointer; font-weight: 900; margin-left: 5px; }
     </style>
 </head>
 <body>
     <!-- モーダル（詳細表示用） -->
     <div id="detail-modal">
-        <div class="modal-content">
-            <h2 class="text-2xl font-black italic text-sky-600 mb-8 uppercase">Reservation Detail / 予約詳細</h2>
+        <div class="modal-content text-left animate-fadeIn">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-black italic text-sky-600 uppercase">Reservation Detail</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-900 text-2xl">&times;</button>
+            </div>
             <div id="modal-body"></div>
-            <div class="mt-8 pt-6 border-t">
-                <button onclick="closeModal()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black italic uppercase text-sm">Close Window</button>
+            <div class="mt-8 pt-6">
+                <button onclick="closeModal()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black italic uppercase text-sm">Close</button>
             </div>
         </div>
     </div>
 
+    <!-- サイドバー -->
     <div class="sidebar">
-        <!-- サイドバーは既存のものを維持してください -->
-        <div class="sidebar-logo"><div class="sidebar-title italic font-black">STC</div><div class="sidebar-subtitle">管理画面</div></div>
-        <nav><ul class="nav-menu">
-            <li class="nav-item"><a href="index.html" class="nav-link"><span class="nav-icon"><i class="fas fa-home"></i></span><span>ダッシュボード</span></a></li>
-            <li class="nav-item"><a href="schedule.html" class="nav-link"><span class="nav-icon"><i class="fas fa-calendar"></i></span><span>スケジュール管理</span></a></li>
-            <li class="nav-item"><a href="reservations.html" class="nav-link active"><span class="nav-icon"><i class="fas fa-users"></i></span><span>予約受付管理</span></a></li>
-            <li class="nav-item"><a href="documents.html" class="nav-link"><span class="nav-icon"><i class="fas fa-file-alt"></i></span><span>書類作成管理</span></a></li>
-        </ul></nav>
+        <div class="sidebar-logo">
+            <div class="sidebar-title">STC</div>
+            <div class="sidebar-subtitle">管理画面</div>
+        </div>
+        <nav>
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> <span>ダッシュボード</span></a>
+            <a href="schedule.html" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>スケジュール管理</span></a>
+            <a href="reservations.html" class="nav-link active"><i class="fas fa-users"></i> <span>予約受付管理</span></a>
+            <a href="documents.html" class="nav-link"><i class="fas fa-file-alt"></i> <span>書類作成管理</span></a>
+        </nav>
     </div>
     
-    <div class="main-content p-10">
-        <div class="header mb-10">
-            <h1 class="page-title">予約受付管理</h1>
-            <p class="page-subtitle">最新の申し込み状況をリアルタイムで確認します</p>
+    <div class="main-content">
+        <div class="admin-header text-left">
+            <h1 class="admin-title">Reservation</h1>
+            <p class="admin-subtitle tracking-widest">予約受付管理システム</p>
+        </div>
+        
+        <div class="flex justify-between items-center mb-8">
+            <div id="sync-status" class="text-xs font-bold text-emerald-400 italic">最新の申し込みを同期中...</div>
         </div>
         
         <div class="table-container">
@@ -68,16 +96,14 @@
                         <th>講習日</th>
                         <th>お名前</th>
                         <th>会社名</th>
-                        <th>電話</th>
                         <th>操作</th>
                     </tr>
                 </thead>
                 <tbody id="reservations-list">
-                    <tr><td colspan="7" class="text-center p-10">読み込み中...</td></tr>
+                    <tr><td colspan="6" class="text-center p-10 text-slate-500 font-bold italic">データを読み込み中...</td></tr>
                 </tbody>
             </table>
         </div>
-        <div id="empty-state" class="text-center p-20 hidden"><i class="fas fa-inbox text-4xl mb-4 opacity-20"></i><p>現在、予約はありません</p></div>
     </div>
     
     <script type="module">
@@ -85,15 +111,7 @@
         import { getFirestore, collection, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         
-        const firebaseConfig = {
-            apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw",
-            authDomain: "stc-hp.firebaseapp.com",
-            projectId: "stc-hp",
-            storageBucket: "stc-hp.firebasestorage.app",
-            messagingSenderId: "795332931918",
-            appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f"
-        };
-        
+        const firebaseConfig = { apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -104,26 +122,22 @@
             const q = query(collection(db, "reservations"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snapshot) => {
                 const tbody = document.getElementById('reservations-list');
-                const emptyState = document.getElementById('empty-state');
                 allReservations = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 
                 if (allReservations.length === 0) {
-                    tbody.innerHTML = '';
-                    emptyState.classList.remove('hidden');
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-10">現在、予約はありません</td></tr>';
                     return;
                 }
                 
-                emptyState.classList.add('hidden');
                 tbody.innerHTML = allReservations.map(res => {
                     const createdAt = res.createdAt ? new Date(res.createdAt.toDate()).toLocaleString('ja-JP') : '-';
                     return `
                         <tr>
-                            <td class="text-xs">${createdAt}</td>
-                            <td class="text-sky-400">${res.courseName || '-'}</td>
-                            <td>${res.courseDate || '-'}</td>
+                            <td class="text-[10px] text-slate-400 font-en">${createdAt}</td>
+                            <td class="text-sky-400 font-black italic">${res.courseName || '-'}</td>
+                            <td class="text-[11px]">${res.courseDate || '-'}</td>
                             <td>${res.userName}</td>
-                            <td>${res.company || '-'}</td>
-                            <td class="font-en">${res.phone}</td>
+                            <td class="text-xs text-slate-400">${res.company || '-'}</td>
                             <td>
                                 <button class="btn-detail" onclick="showDetail('${res.id}')">詳細</button>
                                 <button class="btn-delete" onclick="deleteReservation('${res.id}')">削除</button>
@@ -131,50 +145,41 @@
                         </tr>
                     `;
                 }).join('');
+                document.getElementById('sync-status').innerText = `Firestore 同期済み（${allReservations.length}件）`;
             });
         });
 
         window.showDetail = function(id) {
             const res = allReservations.find(r => r.id === id);
             if (!res) return;
-            
-            const modalBody = document.getElementById('modal-body');
             const createdAt = res.createdAt ? new Date(res.createdAt.toDate()).toLocaleString('ja-JP') : '-';
             
-            modalBody.innerHTML = `
-                <div class="grid grid-cols-2 gap-4">
+            // 写真データの抽出（階層構造に対応）
+            const photoUser = res.photos?.user || res.photoUser || "";
+            
+            document.getElementById('modal-body').innerHTML = `
+                <div class="grid grid-cols-2 gap-x-6 gap-y-2">
                     <div class="col-span-2 flex justify-center mb-6">
-                        ${res.userPhoto ? `<img src="${res.userPhoto}" class="w-32 h-40 object-cover rounded-lg shadow-lg border-2 border-slate-100">` : `<div class="w-32 h-40 bg-slate-100 flex items-center justify-center rounded-lg text-slate-400">No Photo</div>`}
+                        ${photoUser ? `<img src="${photoUser}" class="w-28 h-36 object-cover rounded-xl shadow-lg border-2 border-slate-100">` : `<div class="w-28 h-36 bg-slate-100 flex items-center justify-center rounded-xl text-slate-400 text-[10px]">No Profile Photo</div>`}
                     </div>
-                    <div class="detail-item"><div class="detail-label">申込日時</div><div class="detail-value">${createdAt}</div></div>
-                    <div class="detail-item"><div class="detail-label">希望講習</div><div class="detail-value text-sky-600">${res.courseName}</div></div>
-                    <div class="detail-item"><div class="detail-label">希望日程</div><div class="detail-value">${res.courseDate}</div></div>
-                    <div class="detail-item"><div class="detail-label">お名前</div><div class="detail-value">${res.userName} (${res.userKana})</div></div>
-                    <div class="detail-item"><div class="detail-label">生年月日</div><div class="detail-value">${res.birthDate}</div></div>
-                    <div class="detail-item"><div class="detail-label">電話番号</div><div class="detail-value">${res.phone}</div></div>
-                    <div class="detail-item col-span-2"><div class="detail-label">住所</div><div class="detail-value">${res.address}</div></div>
-                    <div class="detail-item"><div class="detail-label">会社名</div><div class="detail-value">${res.company || '-'}</div></div>
-                    <div class="detail-item"><div class="detail-label">免除資格</div><div class="detail-value text-rose-500">${res.exemption || 'なし'}</div></div>
-                    <div class="detail-item"><div class="detail-label">修了証/免許番号</div><div class="detail-value">${res.licenseNumber || '-'}</div></div>
+                    <div class="detail-item col-span-2"><div class="detail-label">希望講習 / 日程</div><div class="detail-value text-sky-600">${res.courseName}</div><div class="text-xs font-bold">${res.courseDate}</div></div>
+                    <div class="detail-item"><div class="detail-label">お名前</div><div class="detail-value">${res.userName}</div><div class="text-[10px] font-bold text-slate-400">${res.userKana || ''}</div></div>
+                    <div class="detail-item"><div class="detail-label">生年月日</div><div class="detail-value font-en">${res.birthDate || '-'}</div></div>
+                    <div class="detail-item"><div class="detail-label">電話番号</div><div class="detail-value font-en">${res.phone}</div></div>
+                    <div class="detail-item"><div class="detail-label">メール</div><div class="detail-value text-xs font-en">${res.email}</div></div>
+                    <div class="detail-item col-span-2"><div class="detail-label">現住所</div><div class="detail-value text-xs">${res.address || '-'}</div></div>
+                    <div class="detail-item"><div class="detail-label">会社名</div><div class="detail-value text-xs">${res.company || '-'}</div></div>
+                    <div class="detail-item"><div class="detail-label">申込種別</div><div class="detail-value text-[10px] uppercase font-black">${res.mode === 'simple' ? '⚠️ 予約のみ(紙持参)' : '✅ WEB本申込'}</div></div>
                 </div>
             `;
             document.getElementById('detail-modal').style.display = 'flex';
         }
 
-        window.closeModal = function() {
-            document.getElementById('detail-modal').style.display = 'none';
-        }
-
+        window.closeModal = () => { document.getElementById('detail-modal').style.display = 'none'; }
         window.deleteReservation = async function(id) {
             if (!confirm('この予約を完全に削除しますか？')) return;
-            try {
-                await deleteDoc(doc(db, "reservations", id));
-            } catch (error) {
-                console.error(error);
-                alert("削除に失敗しました");
-            }
+            try { await deleteDoc(doc(db, "reservations", id)); } catch (e) { alert("削除失敗"); }
         }
     </script>
 </body>
 </html>
-
