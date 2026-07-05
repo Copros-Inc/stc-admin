@@ -3,272 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STC 管理画面 | 下関トレーニングセンター</title>
+    <title>STC 管理画面 | ダッシュボード</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- 共通CSS -->
-    <link rel="stylesheet" href="css/common.css">
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
+        * { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0b1120; color: #f1f5f9; display: flex; min-height: 100vh; }
         
-        * {
-            font-family: 'Noto Sans JP', sans-serif;
-        }
+        /* サイドバー：共通デザイン */
+        .sidebar { width: 260px; background: #0f172a; border-right: 1px solid rgba(56, 189, 248, 0.1); padding: 40px 20px; flex-shrink: 0; }
+        .sidebar-logo { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; letter-spacing: -0.05em; }
+        .sidebar-subtitle { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: bold; margin-top: 4px; }
         
-        .font-en {
-            font-family: 'Montserrat', sans-serif;
-        }
+        .nav-link { display: flex; align-items: center; gap: 15px; padding: 14px 20px; color: #94a3b8; text-decoration: none; border-radius: 12px; font-weight: 700; transition: all 0.3s; margin-bottom: 8px; font-size: 0.9rem; }
+        .nav-link i { width: 20px; text-align: center; font-size: 1.1rem; }
+        .nav-link:hover { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+        .nav-link.active { background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.05) 100%); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
         
-        body {
-            background: linear-gradient(135deg, #0b1120 0%, #1a2a4a 100%);
-            color: #f1f5f9;
-        }
+        /* メインコンテンツ */
+        .main-content { flex-grow: 1; padding: 60px; overflow-y: auto; background: radial-gradient(circle at top right, #1e293b, #0b1120); }
         
-        .sidebar-logo {
-            margin-bottom: 40px;
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-        }
-        
-        .sidebar-title {
-            font-size: 1.25rem;
-            font-weight: 900;
-            color: #38bdf8;
-            font-style: italic;
-            margin-bottom: 5px;
-        }
-        
-        .sidebar-subtitle {
-            font-size: 0.75rem;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-weight: bold;
-        }
-        
-        .nav-menu {
-            list-style: none;
-        }
-        
-        .nav-item {
-            margin-bottom: 10px;
-        }
-        
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 15px 20px;
-            color: #cbd5e1;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-        }
-        
-        .nav-link:hover {
-            background: rgba(56, 189, 248, 0.1);
-            color: #38bdf8;
-            border-left-color: #38bdf8;
-        }
-        
-        .nav-link.active {
-            background: rgba(56, 189, 248, 0.2);
-            color: #38bdf8;
-            border-left-color: #38bdf8;
-        }
-        
-        .nav-icon {
-            width: 20px;
-            text-align: center;
-        }
-        
-        .header {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-        
-        .page-title {
-            font-size: 2rem;
-            font-weight: 900;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-style: italic;
-        }
-        
-        .page-subtitle {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            font-weight: bold;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-        }
-        
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .card {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 15px;
-            padding: 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(56, 189, 248, 0.5);
-            box-shadow: 0 20px 40px rgba(56, 189, 248, 0.1);
-        }
-        
-        .card-icon {
-            font-size: 2.5rem;
-            color: #38bdf8;
-            margin-bottom: 15px;
-        }
-        
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 900;
-            margin-bottom: 8px;
-            font-style: italic;
-        }
-        
-        .card-description {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            font-weight: bold;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 40px;
-        }
-        
-        .stat-box {
-            background: rgba(56, 189, 248, 0.1);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 900;
-            color: #38bdf8;
-            font-family: 'Montserrat';
-        }
-        
-        .stat-label {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            font-weight: bold;
-            margin-top: 8px;
-        }
+        /* ヘッダーカード */
+        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 40px; margin-bottom: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        .admin-title { font-size: 3rem; font-weight: 900; font-style: italic; color: #38bdf8; text-transform: uppercase; letter-spacing: -0.02em; margin-bottom: 10px; }
+        .admin-subtitle { font-size: 0.8rem; color: #64748b; font-weight: 900; text-transform: uppercase; tracking-widest: 0.2em; }
+
+        /* 統計カード */
+        .stat-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; text-align: center; }
+        .stat-number { font-family: 'Montserrat'; font-size: 2.5rem; font-weight: 900; color: #0ea5e9; font-style: italic; }
+        .stat-label { font-size: 0.7rem; font-weight: 900; color: #64748b; text-transform: uppercase; margin-top: 5px; }
+
+        /* メニューカード */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .menu-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(56,189,248,0.1); border-radius: 24px; padding: 40px; transition: all 0.3s; text-decoration: none; color: inherit; position: relative; overflow: hidden; }
+        .menu-card:hover { background: rgba(56,189,248,0.05); border-color: #38bdf8; transform: translateY(-5px); }
+        .menu-card i { font-size: 2.5rem; color: #38bdf8; margin-bottom: 20px; display: block; }
+        .menu-card h3 { font-size: 1.25rem; font-weight: 900; italic: true; margin-bottom: 10px; }
+        .menu-card p { font-size: 0.8rem; color: #64748b; font-weight: bold; }
     </style>
 </head>
 <body>
-    <!-- サイドバー -->
     <div class="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-title">STC</div>
             <div class="sidebar-subtitle">管理画面</div>
         </div>
-        
         <nav>
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="index.html" class="nav-link active">
-                        <span class="nav-icon"><i class="fas fa-home"></i></span>
-                        <span>ダッシュボード</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="schedule.html" class="nav-link">
-                        <span class="nav-icon"><i class="fas fa-calendar"></i></span>
-                        <span>スケジュール管理</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="reservations.html" class="nav-link">
-                        <span class="nav-icon"><i class="fas fa-users"></i></span>
-                        <span>予約受付管理</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="documents.html" class="nav-link">
-                        <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
-                        <span>書類作成管理</span>
-                    </a>
-                </li>
-            </ul>
+            <a href="index.html" class="nav-link active"><i class="fas fa-home"></i> <span>ダッシュボード</span></a>
+            <a href="schedule.html" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>スケジュール管理</span></a>
+            <a href="reservations.html" class="nav-link"><i class="fas fa-users"></i> <span>予約受付管理</span></a>
+            <a href="documents.html" class="nav-link"><i class="fas fa-file-alt"></i> <span>書類作成管理</span></a>
         </nav>
     </div>
     
-    <!-- メインコンテンツ -->
     <div class="main-content">
-        <div class="header">
-            <h1 class="page-title">ダッシュボード</h1>
-            <p class="page-subtitle">STC 管理画面へようこそ</p>
+        <div class="admin-header text-left">
+            <h1 class="admin-title">Dashboard</h1>
+            <p class="admin-subtitle">下関トレーニングセンター 管理システムへようこそ</p>
         </div>
         
         <!-- 統計情報 -->
-        <div class="stats-grid">
-            <div class="stat-box">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div class="stat-card">
                 <div class="stat-number" id="total-schedules">0</div>
-                <div class="stat-label">開催予定</div>
+                <div class="stat-label">開催予定コース</div>
             </div>
-            <div class="stat-box">
+            <div class="stat-card">
                 <div class="stat-number" id="total-reservations">0</div>
-                <div class="stat-label">予約件数</div>
+                <div class="stat-label">現在の予約総数</div>
             </div>
-            <div class="stat-box">
+            <div class="stat-card">
                 <div class="stat-number" id="available-seats">0</div>
-                <div class="stat-label">空席数</div>
+                <div class="stat-label">全コース合計空席数</div>
             </div>
         </div>
         
-        <!-- 管理メニュー -->
+        <!-- クイックメニュー -->
         <div class="card-grid">
-            <a href="schedule.html" class="card">
-                <div class="card-icon"><i class="fas fa-calendar-plus"></i></div>
-                <div class="card-title">スケジュール管理</div>
-                <div class="card-description">講習スケジュールの追加・編集・削除</div>
+            <a href="schedule.html" class="menu-card">
+                <i class="fas fa-calendar-plus"></i>
+                <h3>スケジュール管理</h3>
+                <p>講習の日程追加、飛び石日程の設定、空席状況の編集を行います。</p>
             </a>
             
-            <a href="reservations.html" class="card">
-                <div class="card-icon"><i class="fas fa-list-check"></i></div>
-                <div class="card-title">予約受付管理</div>
-                <div class="card-description">申し込まれた予約情報の確認・管理</div>
+            <a href="reservations.html" class="menu-card">
+                <i class="fas fa-user-check"></i>
+                <h3>予約受付管理</h3>
+                <p>受講者からの申し込み情報を確認します。写真や免除資格のチェックもここから。</p>
             </a>
             
-            <a href="documents.html" class="card">
-                <div class="card-icon"><i class="fas fa-file-pdf"></i></div>
-                <div class="card-title">書類作成管理</div>
-                <div class="card-description">修了証や領収書などの書類作成</div>
+            <a href="documents.html" class="menu-card">
+                <i class="fas fa-print"></i>
+                <h3>書類作成管理</h3>
+                <p>修了証の原本作成や、領収書の発行、名簿の出力管理を行います。</p>
             </a>
         </div>
     </div>
@@ -278,14 +107,7 @@
         import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         
-        const firebaseConfig = {
-            apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw",
-            authDomain: "stc-hp.firebaseapp.com",
-            projectId: "stc-hp",
-            storageBucket: "stc-hp.firebasestorage.app",
-            messagingSenderId: "795332931918",
-            appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" };
         
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -295,28 +117,19 @@
             // スケジュール数
             onSnapshot(collection(db, "schedules"), (snapshot) => {
                 document.getElementById('total-schedules').textContent = snapshot.docs.length;
+                let totalSeats = 0;
+                snapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    totalSeats += ((data.capacity || 10) - (data.reserved || 0));
+                });
+                document.getElementById('available-seats').textContent = totalSeats;
             });
             
             // 予約数
             onSnapshot(collection(db, "reservations"), (snapshot) => {
                 document.getElementById('total-reservations').textContent = snapshot.docs.length;
             });
-            
-            // 空席数計算
-            onSnapshot(collection(db, "schedules"), (snapshot) => {
-                let totalSeats = 0;
-                snapshot.docs.forEach(doc => {
-                    const data = doc.data();
-                    const capacity = data.capacity || 10;
-                    const reserved = data.reserved || 0;
-                    totalSeats += (capacity - reserved);
-                });
-                document.getElementById('available-seats').textContent = totalSeats;
-            });
         });
     </script>
-    
-    <!-- 共通JavaScript -->
-    <script src="js/common.js"></script>
 </body>
 </html>
