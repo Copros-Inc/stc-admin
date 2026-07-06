@@ -130,71 +130,98 @@
     </div>
     
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        
-        const firebaseConfig = { apiKey: "AiZaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    
+    const firebaseConfig = { 
+        apiKey: "AiZaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", 
+        authDomain: "stc-hp.firebaseapp.com", 
+        projectId: "stc-hp", 
+        storageBucket: "stc-hp.firebasestorage.app", 
+        messagingSenderId: "795332931918", 
+        appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" 
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-        let currentYear = 2026;
-        let currentMonth = 7;
-        let allSchedules = [];
-        let allReservations = [];
+    let currentYear = 2026;
+    let currentMonth = 7;
+    let allSchedules = [];
+    let allReservations = [];
 
-        window.changeMonth = (diff) => {
-            currentMonth += diff;
-            if (currentMonth > 12) { currentMonth = 1; currentYear++; }
-            if (currentMonth < 1) { currentMonth = 12; currentYear--; }
-            updateDisplay();
-        };
+    // 月変更ボタン
+    window.changeMonth = (diff) => {
+        currentMonth += diff;
+        if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+        if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+        updateDisplay();
+    };
 
-        function updateDisplay() {
-            document.getElementById('current-month-display').innerText = `${currentYear}年 ${currentMonth}月`;
-            const courseFilter = document.getElementById('course-filter').value;
+    function updateDisplay() {
+        document.getElementById('current-month-display').innerText = `${currentYear}年 ${currentMonth}月`;
+        const courseFilter = document.getElementById('course-filter').value;
 
-            // スケジュール集計
-            const filteredSchedules = allSchedules.filter(s => {
-                const matchMonth = parseInt(s.month) === currentMonth;
-                const matchCourse = courseFilter === 'all' || s.courseName.includes(courseFilter);
-                return matchMonth && matchCourse;
-            });
-            document.getElementById('monthly-schedules').textContent = filteredSchedules.length;
-
-            // 予約数と空席数の集計ロジック（実際は予約データを元に計算）
-            const monthlyResCount = allReservations.filter(r => {
-                // 予約データ内の講習名や日付から月を判別するロジックが必要
-                return r.courseName && r.courseName.includes(courseFilter === 'all' ? '' : courseFilter);
-            }).length;
-            document.getElementById('monthly-reservations').textContent = monthlyResCount;
-        }
-
-        signInAnonymously(auth).then(() => {
-            // スケジュール監視
-            onSnapshot(collection(db, "schedules"), (snap) => {
-                allSchedules = snap.docs.map(doc => doc.data());
-                updateDisplay();
-            });
-
-            // 予約監視（未処理バッジ用）
-            onSnapshot(collection(db, "reservations"), (snap) => {
-                allReservations = snap.docs.map(doc => doc.data());
-                const newCount = snap.docs.filter(doc => doc.data().status === 'new').length;
-                const badge = document.getElementById('new-res-badge');
-                if (newCount > 0) {
-                    badge.innerText = newCount;
-                    badge.style.display = 'block';
-                } else {
-                    badge.style.display = 'none';
-                }
-                updateDisplay();
-            });
-
-            document.getElementById('course-filter').addEventListener('change', updateDisplay);
-            document.getElementById('today-display').innerText = new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric', weekday:'long'});
+        // 1. スケジュール集計
+        const filteredSchedules = allSchedules.filter(s => {
+            const sMonth = Number(s.month); // 確実に数値に変換
+            const matchMonth = sMonth === currentMonth;
+            const matchCourse = courseFilter === 'all' || (s.courseName && s.courseName.includes(courseFilter));
+            return matchMonth && matchCourse;
         });
+        document.getElementById('monthly-schedules').textContent = filteredSchedules.length;
+
+        // 2. 予約数集計（予約データ内の日付やコース名で紐付け）
+        const filteredReservations = allReservations.filter(r => {
+            // 予約データが持つ講習名がフィルターに合うか
+            const matchCourse = courseFilter === 'all' || (r.courseName && r.courseName.includes(courseFilter));
+            // 本来は日付（7/15など）から月を出す必要がありますが、まずは簡易的にコース一致のみ
+            return matchCourse;
+        });
+        document.getElementById('monthly-reservations').textContent = filteredReservations.length;
+
+        // 3. 空席合計の計算
+        let totalAvailable = 0;
+        filteredSchedules.forEach(s => {
+            const cap = Number(s.capacity) || 10; // 定員設定がない場合は10
+            const res = Number(s.reserved) || 0; // 予約済み数
+            totalAvailable += (cap - res);
+        });
+        document.getElementById('monthly-available').textContent = totalAvailable;
+    }
+
+    signInAnonymously(auth).then(() => {
+        // スケジュール監視
+        onSnapshot(collection(db, "schedules"), (snap) => {
+            allSchedules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateDisplay(); // データが届くたびに更新
+        });
+
+        // 予約監視
+        onSnapshot(collection(db, "reservations"), (snap) => {
+            allReservations = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // 未読バッジの計算（statusが'new'のものをカウント）
+            const newCount = allReservations.filter(r => r.status === 'new').length;
+            const badge = document.getElementById('new-res-badge');
+            if (newCount > 0) {
+                badge.innerText = newCount;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+            updateDisplay();
+        });
+
+        // フィルター変更イベント
+        document.getElementById('course-filter').addEventListener('change', updateDisplay);
+        
+        // 今日の日付表示
+        document.getElementById('today-display').innerText = new Date().toLocaleDateString('ja-JP', {
+            year:'numeric', month:'long', day:'numeric', weekday:'long'
+        });
+    });
     </script>
 </body>
 </html>
