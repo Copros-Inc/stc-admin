@@ -191,29 +191,27 @@
         document.getElementById('monthly-available').textContent = totalAvailable;
     }
 
-    signInAnonymously(auth).then(() => {console.log("Firebaseログイン成功！データを読み込みます...");
+    // 匿名ログインを実行
+signInAnonymously(auth)
+    .then(() => {
+        console.log("Firebaseログイン成功！データを読み込みます...");
         
-        // スケジュール監視
+        // 【ここから下はさっきと同じ】
         onSnapshot(collection(db, "schedules"), (snap) => {
             allSchedules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updateDisplay(); // データが届くたびに更新
-        });
-
-        // 予約監視
-        onSnapshot(collection(db, "reservations"), (snap) => {
-            allReservations = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            // 未読バッジの計算（statusが'new'のものをカウント）
-            const newCount = allReservations.filter(r => r.status === 'new').length;
-            const badge = document.getElementById('new-res-badge');
-            if (newCount > 0) {
-                badge.innerText = newCount;
-                badge.style.display = 'block';
-            } else {
-                badge.style.display = 'none';
-            }
             updateDisplay();
         });
+
+        onSnapshot(collection(db, "reservations"), (snap) => {
+            allReservations = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // バッジ更新...
+            updateDisplay();
+        });
+    })
+    .catch((error) => {
+        console.error("Firebaseログイン失敗:", error.code, error.message);
+        alert("管理画面へのアクセス権限がありません。Firebase Consoleで匿名認証が有効か確認してください。");
+    });
 
         // フィルター変更イベント
         document.getElementById('course-filter').addEventListener('change', updateDisplay);
