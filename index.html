@@ -191,36 +191,49 @@
         document.getElementById('monthly-available').textContent = totalAvailable;
     }
 
-    // 匿名ログインを実行
-signInAnonymously(auth)
-    .then(() => {
-        console.log("Firebaseログイン成功！データを読み込みます...");
-        
-        // 【ここから下はさっきと同じ】
-        onSnapshot(collection(db, "schedules"), (snap) => {
-            allSchedules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updateDisplay();
+        // 匿名ログインを実行
+    signInAnonymously(auth)
+        .then(() => {
+            console.log("Firebase Auth Success");
+
+            // 1. スケジュール監視
+            onSnapshot(collection(db, "schedules"), (snap) => {
+                allSchedules = snap.docs.map(doc => {
+                    const data = doc.data();
+                    console.log("取得講習:", data.courseName, "月:", data.month);
+                    return { id: doc.id, ...data };
+                });
+                updateDisplay();
+            });
+
+            // 2. 予約監視
+            onSnapshot(collection(db, "reservations"), (snap) => {
+                allReservations = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const newCount = allReservations.filter(r => r.status === 'new').length;
+                const badge = document.getElementById('new-res-badge');
+                if (badge) {
+                    badge.innerText = newCount;
+                    badge.style.display = newCount > 0 ? 'block' : 'none';
+                }
+                updateDisplay();
+            });
+        })
+        .catch((error) => {
+            console.error("Firebase Auth Error:", error.code, error.message);
+            alert("ログインエラーが発生しました。設定を確認してください。");
         });
 
-        onSnapshot(collection(db, "reservations"), (snap) => {
-            allReservations = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // バッジ更新...
-            updateDisplay();
-        });
-    })
-    .catch((error) => {
-        console.error("Firebaseログイン失敗:", error.code, error.message);
-        alert("管理画面へのアクセス権限がありません。Firebase Consoleで匿名認証が有効か確認してください。");
-    });
-
-        // フィルター変更イベント
-        document.getElementById('course-filter').addEventListener('change', updateDisplay);
-        
-        // 今日の日付表示
-        document.getElementById('today-display').innerText = new Date().toLocaleDateString('ja-JP', {
+    // フィルター変更イベント
+    document.getElementById('course-filter').addEventListener('change', updateDisplay);
+    
+    // 今日の日付表示
+    const todayDisplayEl = document.getElementById('today-display');
+    if (todayDisplayEl) {
+        todayDisplayEl.innerText = new Date().toLocaleDateString('ja-JP', {
             year:'numeric', month:'long', day:'numeric', weekday:'long'
         });
-    });
+    }
     </script>
 </body>
 </html>
