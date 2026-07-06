@@ -191,7 +191,8 @@
         document.getElementById('monthly-available').textContent = totalAvailable;
     }
 
-    signInAnonymously(auth).then(() => {
+    signInAnonymously(auth).then(() => {console.log("Firebaseログイン成功！データを読み込みます...");
+        
         // スケジュール監視
         onSnapshot(collection(db, "schedules"), (snap) => {
             allSchedules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
