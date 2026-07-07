@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STC 管理画面 | FAQ管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
+        * { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0b1120; color: #f1f5f9; display: flex; min-height: 100vh; }
+        
+        /* 統一サイドバー */
+        .sidebar { width: 260px; background: #0f172a; border-right: 1px solid rgba(56, 189, 248, 0.1); padding: 40px 20px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; }
+        .sidebar-logo { text-align: center; margin-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px; }
+        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; }
+        .nav-link { display: flex; align-items: center; gap: 15px; padding: 14px 20px; color: #94a3b8; text-decoration: none; border-radius: 12px; font-weight: 700; transition: 0.3s; margin-bottom: 8px; font-size: 0.85rem; position: relative; }
+        .nav-link.active { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+        .badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ef4444; color: white; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-family: 'Montserrat'; font-weight: 900; }
+        
+        .main-content { flex-grow: 1; padding: 60px; overflow-y: auto; background: radial-gradient(circle at top right, #1e293b, #0b1120); }
+        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 30px 40px; margin-bottom: 40px; }
+        .admin-title { font-size: 2.5rem; font-weight: 900; font-style: italic; color: #38bdf8; text-transform: uppercase; }
+
+        /* リスト表示 */
+        .faq-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 30px; margin-bottom: 20px; transition: 0.3s; position: relative; }
+        .faq-card:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.02); }
+        .faq-order { position: absolute; top: 30px; left: -10px; background: #38bdf8; color: #0f172a; font-family: 'Montserrat'; font-weight: 900; padding: 4px 12px; border-radius: 8px; transform: rotate(-5deg); box-shadow: 5px 5px 15px rgba(0,0,0,0.3); }
+
+        .btn-add { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 12px 30px; border-radius: 50px; font-weight: 900; border: none; cursor: pointer; transition: 0.3s; font-style: italic; }
+        .btn-delete { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 900; font-size: 0.7rem; }
+
+        /* モーダル */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #0f172a; border: 1px solid #38bdf8; border-radius: 2.5rem; padding: 40px; width: 95%; max-width: 600px; }
+        .input-field { width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: 12px; color: #fff; font-weight: bold; margin-bottom: 20px; outline: none; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-logo"><div class="sidebar-title">STC</div><div class="sidebar-subtitle">CONTROL PANEL</div></div>
+        <nav>
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> <span>ダッシュボード</span></a>
+            <a href="schedule.html" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>スケジュール管理</span></a>
+            <a href="reservations.html" class="nav-link">
+                <i class="fas fa-users"></i> <span>予約受付管理</span>
+                <span id="new-res-badge" class="badge" style="display:none">0</span>
+            </a>
+            <a href="news.html" class="nav-link"><i class="fas fa-bullhorn"></i> <span>お知らせ管理</span></a>
+            <a href="faq.html" class="nav-link active"><i class="fas fa-question-circle"></i> <span>よくある質問管理</span></a>
+            <a href="documents.html" class="nav-link"><i class="fas fa-file-alt"></i> <span>書類作成管理</span></a>
+        </nav>
+    </div>
+    
+    <div class="main-content">
+        <div class="admin-header flex justify-between items-center">
+            <div>
+                <h1 class="admin-title uppercase">FAQ Manager</h1>
+                <p class="text-[10px] text-slate-500 font-black tracking-widest">よくある質問の追加・編集</p>
+            </div>
+            <button class="btn-add shadow-lg shadow-sky-500/20" onclick="window.openFaqModal()"><i class="fas fa-plus mr-2"></i> 新規質問を追加</button>
+        </div>
+
+        <div id="faq-list" class="space-y-6">
+            <p class="text-center text-slate-600 italic py-20">読み込み中...</p>
+        </div>
+    </div>
+
+    <!-- 編集モーダル -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title" class="text-2xl font-black text-sky-400 italic mb-8 uppercase">Edit FAQ</h2>
+            <form id="faq-form">
+                <label class="text-[10px] font-black text-slate-500 uppercase block mb-2 tracking-widest">質問内容 / Question</label>
+                <input type="text" id="faqQuestion" class="input-field" placeholder="例：未経験でも受講可能ですか？" required>
+                
+                <label class="text-[10px] font-black text-slate-500 uppercase block mb-2 tracking-widest">回答内容 / Answer</label>
+                <textarea id="faqAnswer" class="input-field" rows="4" placeholder="例：はい、初心者の方でもベテラン講師が丁寧に指導いたします。" required></textarea>
+                
+                <label class="text-[10px] font-black text-slate-500 uppercase block mb-2 tracking-widest">表示順 / Order (数字が小さいほど上に表示)</label>
+                <input type="number" id="faqOrder" class="input-field" value="10" required>
+                
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 bg-sky-500 text-white py-4 rounded-xl font-black italic shadow-lg">保存する / SAVE</button>
+                    <button type="button" onclick="window.closeFaqModal()" class="flex-1 bg-slate-700 text-white py-4 rounded-xl font-black italic">キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let faqs = [];
+        let editingId = null;
+
+        signInAnonymously(auth).then(() => {
+            // FAQ一覧を監視
+            onSnapshot(query(collection(db, "faq"), orderBy("order", "asc")), (snap) => {
+                faqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const listEl = document.getElementById('faq-list');
+                listEl.innerHTML = faqs.map(f => `
+                    <div class="faq-card">
+                        <div class="faq-order">#${f.order}</div>
+                        <div class="ml-8">
+                            <h3 class="text-sky-400 font-black italic mb-2">Q. ${f.question}</h3>
+                            <p class="text-slate-400 text-sm font-bold italic leading-loose">A. ${f.answer}</p>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button class="text-sky-400 text-[10px] font-black border border-sky-400/30 px-3 py-1 rounded-md hover:bg-sky-400 hover:text-slate-900 transition" onclick="window.openFaqModal('${f.id}')">編集</button>
+                                <button class="btn-delete" onclick="window.deleteFaq('${f.id}')">削除</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('') || '<p class="text-center text-slate-600 py-10">質問が登録されていません</p>';
+            });
+
+            // バッジ用
+            onSnapshot(collection(db, "reservations"), (snap) => {
+                const n = snap.docs.filter(d => d.data().status === 'new').length;
+                const badge = document.getElementById('new-res-badge');
+                badge.innerText = n; badge.style.display = n > 0 ? 'block' : 'none';
+            });
+        });
+
+        window.openFaqModal = (id = null) => {
+            editingId = id;
+            const form = document.getElementById('faq-form');
+            form.reset();
+            document.getElementById('modal-title').innerText = id ? 'Edit FAQ' : 'New FAQ';
+            if (id) {
+                const f = faqs.find(item => item.id === id);
+                document.getElementById('faqQuestion').value = f.question;
+                document.getElementById('faqAnswer').value = f.answer;
+                document.getElementById('faqOrder').value = f.order;
+            }
+            document.getElementById('modal-overlay').classList.add('active');
+        };
+
+        window.closeFaqModal = () => document.getElementById('modal-overlay').classList.remove('active');
+
+        document.getElementById('faq-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = {
+                question: document.getElementById('faqQuestion').value,
+                answer: document.getElementById('faqAnswer').value,
+                order: parseInt(document.getElementById('faqOrder').value),
+                updatedAt: serverTimestamp()
+            };
+
+            try {
+                if (editingId) await updateDoc(doc(db, "faq", editingId), data);
+                else await addDoc(collection(db, "faq"), { ...data, createdAt: serverTimestamp() });
+                window.closeFaqModal();
+            } catch (err) { alert("エラー: " + err.message); }
+        };
+
+        window.deleteFaq = async (id) => {
+            if(confirm("この質問を削除しますか？")) await deleteDoc(doc(db, "faq", id));
+        };
+    </script>
+</body>
+</html>
