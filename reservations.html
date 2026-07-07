@@ -175,33 +175,87 @@
             }).join('');
         }
 
-        window.openDetail = (id) => {
+               window.openDetail = (id) => {
             const r = reservations.find(item => item.id === id);
             const body = document.getElementById('modal-body');
-            let extra = "";
-            const add = (l, v) => { if(v) extra += `<div class="mb-3 bg-white/5 p-3 rounded-xl border border-white/5"><span class="info-label">${l}</span><span class="text-xs font-bold text-white">${v}</span></div>`; };
-            add("免除区分", r.exType || r.f11); add("証書番号", r.exNo || r.exNoB || r.licNo || r.licenseNo); add("交付機関", r.exOrg || r.exOrgB || r.spOrg); add("生年月日", r.birthDate); add("免許種類", r.licChecked || r.licT); add("機体", r.mcM ? `${r.mcM} / ${r.mcT}` : null); add("経験", r.mcExp);
+            
+            // 全データを「もしあれば表示する」リストを作成
+            let detailsHtml = "";
+            const row = (label, val) => { 
+                if(val && val !== "undefined") detailsHtml += `
+                    <div class="mb-4 border-b border-white/5 pb-2">
+                        <span class="info-label text-sky-400 text-[10px] font-black uppercase tracking-widest">${label}</span>
+                        <p class="text-white font-bold italic text-base">${val}</p>
+                    </div>`; 
+            };
+
+            // 【基本情報】
+            row("氏名(フリガナ)", `${r.userName} (${r.userKana || ''})`);
+            row("生年月日", r.birthDate);
+            row("現住所", r.address ? `〒${r.zip || ''} ${r.address}` : null);
+            row("旧姓・通称希望", r.maidenName);
+            
+            // 【連絡先・勤務先】
+            row("メールアドレス", r.email);
+            row("本人電話番号", r.phone);
+            row("勤務先名", r.company);
+            row("勤務先電話", r.compPhone);
+            row("勤務先住所", r.compAddress ? `〒${r.compZip || ''} ${r.compAddress}` : null);
+
+            // 【免除資格・実務経験データ】(apply.htmlの全項目を網羅)
+            row("免除区分/選択", r.exType || r.f11);
+            row("修了証/免許番号", r.exNo || r.exNoB || r.licNo || r.licenseNo || r.spNo);
+            row("交付機関", r.exOrg || r.exOrgB || r.spOrg);
+            row("取得/修了日", r.exDate || r.exDateB || r.licDate || r.spDate);
+            row("保有免許(チェック項目)", r.licChecked || r.licT);
+            row("経験機体メーカー", r.mcM);
+            row("経験機体 型式", r.mcT);
+            row("経験機体 最大荷重", r.mcW);
+            row("実務経験期間", r.mcExp);
+            
+            // 【事務・その他】
+            row("助成金利用", r.subsidy);
+            row("領収書の宛名", r.receipt === '必要' ? (r.receiptName || '要確認') : '不要');
 
             body.innerHTML = `
-                <div class="space-y-4 text-center">
-                    <div class="bg-slate-800 p-4 rounded-2xl border border-white/5">
-                        <span class="info-label text-sky-400 mb-2">Profile</span>
-                        ${r.photos?.user ? `<img src="${r.photos.user}" class="w-full rounded-xl shadow-xl">` : 'なし'}
+                <!-- 左側：写真エリア（4枚対応） -->
+                <div class="space-y-6">
+                    <div class="bg-slate-800 p-4 rounded-[2rem] border border-white/10 text-center shadow-2xl overflow-hidden">
+                        <span class="info-label text-sky-400 mb-4 tracking-[0.2em]">Profile Photo</span>
+                        ${r.photos?.user ? `<img src="${r.photos.user}" class="w-full rounded-2xl shadow-lg border-2 border-white/5">` : '<p class="text-slate-500 italic py-10">証明写真なし</p>'}
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        ${r.photos?.licA ? `<img src="${r.photos.licA}" class="w-full rounded border border-white/10">` : ''}
-                        ${r.photos?.licB ? `<img src="${r.photos.licB}" class="w-full rounded border border-white/10">` : ''}
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5 text-center">
+                            <span class="info-label text-[8px] mb-2 opacity-50">免許/証書表</span>
+                            ${r.photos?.licA ? `<img src="${r.photos.licA}" class="w-full rounded shadow-md">` : '<p class="text-[9px] text-slate-600">なし</p>'}
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5 text-center">
+                            <span class="info-label text-[8px] mb-2 opacity-50">免許/証書裏</span>
+                            ${r.photos?.licB ? `<img src="${r.photos.licB}" class="w-full rounded shadow-md">` : '<p class="text-[9px] text-slate-600">なし</p>'}
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5 text-center">
+                            <span class="info-label text-[8px] mb-2 opacity-50">特教/事業印</span>
+                            ${r.photos?.spA || r.photos?.emp ? `<img src="${r.photos.spA || r.photos.emp}" class="w-full rounded shadow-md">` : '<p class="text-[9px] text-slate-600">なし</p>'}
+                        </div>
+                        <div class="bg-slate-800 p-3 rounded-xl border border-white/5 text-center">
+                            <span class="info-label text-[8px] mb-2 opacity-50">特教裏/予備</span>
+                            ${r.photos?.spB ? `<img src="${r.photos.spB}" class="w-full rounded shadow-md">` : '<p class="text-[9px] text-slate-600">なし</p>'}
+                        </div>
                     </div>
                 </div>
-                <div class="space-y-4">
-                    <div class="bg-white/5 p-4 rounded-2xl"><span class="info-label">氏名</span><p class="text-xl font-black italic text-white">${r.userName} (${r.userKana})</p></div>
-                    <div class="bg-white/5 p-4 rounded-2xl"><span class="info-label">連絡先</span><p class="info-val">${r.phone}</p><p class="text-[10px] text-slate-400">${r.email}</p></div>
-                    <div class="bg-white/5 p-4 rounded-2xl"><span class="info-label">住所</span><p class="text-[11px] font-bold text-white">〒${r.zip || ''} ${r.address || ''}</p></div>
+
+                <!-- 右側：全文字データエリア（2カラムで広々表示） -->
+                <div class="md:col-span-2 bg-white/5 p-8 rounded-[2.5rem] border border-white/10 shadow-inner overflow-hidden">
+                    <h3 class="text-sky-500 font-black italic text-sm mb-8 border-b-2 border-sky-500/30 pb-2 uppercase tracking-widest flex items-center">
+                        <i class="fas fa-file-invoice mr-2"></i> Application Details
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-x-10">
+                        ${detailsHtml || '<p class="text-slate-500 italic">データがありません</p>'}
+                    </div>
                 </div>
-                <div class="space-y-4">
-                    <div class="bg-slate-800 p-5 rounded-2xl border border-white/5">${extra || '追加データなし'}</div>
-                    <div class="bg-sky-500/10 p-4 rounded-2xl border border-sky-500/20"><span class="info-label text-sky-400">勤務先</span><p class="text-sm font-black italic text-white">${r.company || '個人'}</p></div>
-                </div>`;
+            `;
+            
+            // ボタンのクリックイベント再設定
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
             document.getElementById('btn-wait-final').onclick = () => window.processAction(r.id, 'waiting', r);
             document.getElementById('btn-delete-final').onclick = () => window.deleteRes(r.id);
