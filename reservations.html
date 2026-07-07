@@ -139,8 +139,11 @@
             renderTable();
         };
 
-        function renderTable() {
+               function renderTable() {
             const listEl = document.getElementById('res-list');
+            updateDashboard();
+
+            // ソート処理
             const sorted = [...reservations].sort((a, b) => {
                 let valA = a[currentSort.key]; let valB = b[currentSort.key];
                 if (currentSort.key === 'createdAt') { valA = valA?.toDate() || 0; valB = valB?.toDate() || 0; }
@@ -151,24 +154,36 @@
 
             listEl.innerHTML = sorted.map(r => {
                 const dateStr = r.createdAt?.toDate().toLocaleString('ja-JP') || '-';
-                const isSent = r.mailStatus === 'sent' ? '<span class="text-[8px] text-emerald-400 font-black block text-center">✅ 送信済</span>' : '';
+                const isSent = r.mailStatus === 'sent' ? '<span class="text-[8px] text-emerald-400 font-black block mt-1 text-center">✅ 送信済</span>' : '';
+                
+                // 【修正ポイント1】重複表示の解消
+                // もし「玉掛け, 玉掛け」のようにカンマで重なっていたら、最初の1つだけを表示する
+                const cleanCourseName = typeof r.courseName === 'string' ? r.courseName.split(',')[0].trim() : r.courseName;
+                const cleanCourseDate = typeof r.courseDate === 'string' ? r.courseDate.split(',')[0].trim() : r.courseDate;
+
+                // 【修正ポイント2】ボタンの動的分岐と色
                 let mailBtn = "";
-                if(r.status === 'waiting') mailBtn = `<button class="btn-mail-action !bg-amber-600" onclick="window.sendMail('${r.id}', 'waiting')">待機依頼</button>`;
-                else if(r.mode === 'full') mailBtn = `<button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'guide')">受講案内</button>`;
-                else mailBtn = `<button class="btn-mail-action !bg-slate-500" onclick="window.sendMail('${r.id}', 'simple')">書類提出依頼</button>`;
+                if(r.status === 'waiting') {
+                    mailBtn = `<button class="btn-mail-action !bg-amber-600 !text-white" onclick="window.sendMail('${r.id}', 'waiting')">待機依頼を送る</button>`;
+                } else if(r.mode === 'full') {
+                    mailBtn = `<button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'guide')">受講案内を送る</button>`;
+                } else {
+                    // 予約のみの方：目立つアンバー（薄黄色）に変更
+                    mailBtn = `<button class="btn-mail-action !bg-yellow-500 !text-slate-900" onclick="window.sendMail('${r.id}', 'simple')">書類提出を依頼</button>`;
+                }
 
                 return `
                 <tr>
                     <td class="text-white font-bold font-en text-[11px]">${dateStr}</td>
                     <td><span class="tag-mode ${r.mode === 'full' ? 'mode-full' : 'mode-simple'}">${r.mode === 'full' ? '本申込' : '予約'}</span></td>
                     <td>
-                        <div class="text-sky-400 font-black italic text-sm">${r.courseName}</div>
-                        <div class="text-[11px] text-white font-bold opacity-70">${r.courseDate}</div>
+                        <div class="text-sky-400 font-black italic text-sm">${cleanCourseName}</div>
+                        <div class="text-[10px] text-white font-bold opacity-60">${cleanCourseDate}</div>
                     </td>
                     <td class="font-black italic text-white text-base">
                         ${r.status === 'new' ? '<span class="new-dot"></span>' : r.status === 'waiting' ? '<span class="wait-dot"></span>' : ''}${r.userName}
                     </td>
-                    <td class="text-slate-300 font-bold text-xs">${r.company || '個人'}</td>
+                    <td class="text-slate-400 font-bold text-[10px] font-en">${r.email}</td>
                     <td><div class="w-32">${mailBtn}${isSent}</div></td>
                     <td><button class="bg-sky-500 text-white text-[10px] px-4 py-2 rounded-lg font-black italic shadow-lg" onclick="openDetail('${r.id}')">詳細</button></td>
                 </tr>`;
