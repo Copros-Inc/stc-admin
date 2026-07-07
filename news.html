@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STC 管理画面 | お知らせ管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
+        * { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0b1120; color: #f1f5f9; display: flex; min-height: 100vh; }
+        
+        /* 統一サイドバー */
+        .sidebar { width: 260px; background: #0f172a; border-right: 1px solid rgba(56, 189, 248, 0.1); padding: 40px 20px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; }
+        .sidebar-logo { text-align: center; margin-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px; }
+        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; }
+        .nav-link { display: flex; align-items: center; gap: 15px; padding: 14px 20px; color: #94a3b8; text-decoration: none; border-radius: 12px; font-weight: 700; transition: 0.3s; margin-bottom: 8px; font-size: 0.85rem; position: relative; }
+        .nav-link.active { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+        .badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ef4444; color: white; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-family: 'Montserrat'; font-weight: 900; }
+        
+        .main-content { flex-grow: 1; padding: 60px; overflow-y: auto; background: radial-gradient(circle at top right, #1e293b, #0b1120); }
+        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 30px 40px; margin-bottom: 40px; }
+        .admin-title { font-size: 2.5rem; font-weight: 900; font-style: italic; color: #38bdf8; text-transform: uppercase; }
+
+        /* 入力フォーム */
+        .form-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 24px; padding: 40px; margin-bottom: 40px; }
+        .input-field { width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: 12px; color: #fff; font-weight: bold; margin-bottom: 20px; outline: none; transition: 0.3s; }
+        .input-field:focus { border-color: #38bdf8; background: rgba(56,189,248,0.05); }
+        
+        /* お知らせリスト */
+        .news-item { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: justify; align-items: center; gap: 20px; }
+        .news-date { font-family: 'Montserrat'; font-size: 0.8rem; color: #64748b; font-weight: 900; }
+        .news-content { flex-grow: 1; font-weight: 700; color: #f1f5f9; }
+        .tag-important { background: #ef4444; color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 900; margin-right: 10px; }
+
+        .btn-post { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 15px 40px; border-radius: 50px; font-weight: 900; border: none; cursor: pointer; transition: 0.3s; font-style: italic; }
+        .btn-delete { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 900; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-logo"><div class="sidebar-title">STC</div><div class="sidebar-subtitle">CONTROL PANEL</div></div>
+        <nav>
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> <span>ダッシュボード</span></a>
+            <a href="schedule.html" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>スケジュール管理</span></a>
+            <a href="reservations.html" class="nav-link"><i class="fas fa-users"></i> <span>予約受付管理</span><span id="new-res-badge" class="badge" style="display:none">0</span></a>
+            <a href="news.html" class="nav-link active"><i class="fas fa-bullhorn"></i> <span>お知らせ管理</span></a>
+            <a href="faq.html" class="nav-link"><i class="fas fa-question-circle"></i> <span>よくある質問管理</span></a>
+            <a href="documents.html" class="nav-link"><i class="fas fa-file-alt"></i> <span>書類作成管理</span></a>
+        </nav>
+    </div>
+    
+    <div class="main-content">
+        <div class="admin-header">
+            <h1 class="admin-title uppercase">News Manager</h1>
+            <p class="text-[10px] text-slate-500 font-black tracking-widest">HPトップの掲示板更新</p>
+        </div>
+
+        <!-- 新規投稿フォーム -->
+        <div class="form-container">
+            <form id="news-form">
+                <label class="text-[10px] font-black text-slate-500 uppercase block mb-2 tracking-widest">本文 / News Content</label>
+                <textarea id="newsContent" class="input-field" rows="3" placeholder="例：【重要】7月20日の玉掛け講習は台風の影響により延期となりました。" required></textarea>
+                
+                <div class="flex items-center gap-6 mb-6">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="isImportant" class="w-5 h-5 accent-red-500">
+                        <span class="text-sm font-black italic text-rose-400 uppercase">重要フラグを立てる</span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn-post shadow-lg shadow-sky-500/20">HPに投稿する / POST NEWS</button>
+            </form>
+        </div>
+
+        <!-- 投稿済みリスト -->
+        <div id="news-list" class="space-y-4">
+            <p class="text-center text-slate-600 italic py-10">読み込み中...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        signInAnonymously(auth).then(() => {
+            // お知らせ一覧の監視
+            onSnapshot(query(collection(db, "news"), orderBy("createdAt", "desc")), (snap) => {
+                const listEl = document.getElementById('news-list');
+                listEl.innerHTML = snap.docs.map(d => {
+                    const data = d.data();
+                    const date = data.createdAt?.toDate().toLocaleDateString() || '---';
+                    return `
+                    <div class="news-item">
+                        <div class="news-date font-en">${date}</div>
+                        <div class="news-content">
+                            ${data.isImportant ? '<span class="tag-important">重要</span>' : ''}
+                            ${data.content}
+                        </div>
+                        <button class="btn-delete" onclick="window.deleteNews('${d.id}')">削除</button>
+                    </div>`;
+                }).join('') || '<p class="text-center text-slate-600 italic py-10">投稿されたお知らせはありません</p>';
+            });
+
+            // バッジ用：予約監視
+            onSnapshot(collection(db, "reservations"), (snap) => {
+                const n = snap.docs.filter(d => d.data().status === 'new').length;
+                const badge = document.getElementById('new-res-badge');
+                badge.innerText = n; badge.style.display = n > 0 ? 'block' : 'none';
+            });
+        });
+
+        // 投稿処理
+        document.getElementById('news-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const content = document.getElementById('newsContent').value;
+            const isImportant = document.getElementById('isImportant').checked;
+            
+            try {
+                await addDoc(collection(db, "news"), {
+                    content: content,
+                    isImportant: isImportant,
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('news-form').reset();
+                alert("投稿しました！HPに反映されます。");
+            } catch (err) { alert("投稿エラー: " + err.message); }
+        };
+
+        // 削除処理
+        window.deleteNews = async (id) => {
+            if(confirm("このお知らせを削除しますか？")) {
+                await deleteDoc(doc(db, "news", id));
+            }
+        };
+    </script>
+</body>
+</html>
