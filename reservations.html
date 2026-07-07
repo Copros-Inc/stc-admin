@@ -145,31 +145,50 @@
             badge.style.display = n > 0 ? 'block' : 'none';
         }
 
-        function renderTable() {
+                function renderTable() {
             const listEl = document.getElementById('res-list');
-            listEl.innerHTML = reservations.map(r => `
-                <tr>
-                    <td class="text-slate-500 font-en text-[10px]">${r.createdAt?.toDate().toLocaleString() || '-'}</td>
-                    <td><span class="tag-mode ${r.mode === 'full' ? 'mode-full' : 'mode-simple'}">${r.mode === 'full' ? '本申込' : '予約のみ'}</span></td>
+            updateDashboard();
+
+            listEl.innerHTML = reservations.map(r => {
+                const dateStr = r.createdAt?.toDate().toLocaleString('ja-JP') || '---';
+                // 送信済みチェック
+                const isSent = r.mailStatus === 'sent' ? '<span class="text-[9px] text-emerald-500 font-black ml-2"><i class="fas fa-check-circle"></i> 案内済</span>' : '';
+                const modeClass = r.mode === 'full' ? 'mode-full' : 'mode-simple';
+                const modeText = r.mode === 'full' ? '本申込' : '予約のみ';
+                
+                return `<tr>
+                    <td class="text-slate-500 font-en text-[10px]">${dateStr}</td>
+                    <td><span class="tag-mode ${modeClass}">${modeText}</span></td>
                     <td>
                         <div class="text-sky-400 font-black italic">${r.courseName}</div>
                         <div class="text-[10px] text-slate-500">${r.courseDate}</div>
                     </td>
                     <td class="font-black italic">${r.status === 'new' ? '<span class="new-mark"></span>' : r.status === 'waiting' ? '<span class="wait-mark"></span>' : ''}${r.userName}</td>
                     <td class="text-slate-400 font-bold">${r.company || '個人'}</td>
-                    <td class="flex flex-col">
-                        <button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'guide')">受講案内</button>
-                        <button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'waiting')">待機依頼</button>
+                    <td>
+                        <div class="flex flex-col gap-1">
+                            <button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'guide')">受講案内を送る</button>
+                            ${isSent}
+                        </div>
                     </td>
                     <td><button class="bg-sky-500 text-white text-[10px] px-3 py-1.5 rounded-lg font-black italic" onclick="openDetail('${r.id}')">詳細</button></td>
-                </tr>
-            `).join('');
+                </tr>`;
+            }).join('');
         }
 
         window.openDetail = (id) => {
             const r = reservations.find(item => item.id === id);
             const body = document.getElementById('modal-body');
             
+            // 免除条件等の詳細情報を整理
+            let extraInfo = "";
+            if (r.exNo || r.exNoB) extraInfo += `<p>修了証/免許番号: ${r.exNo || r.exNoB}</p>`;
+            if (r.exOrg || r.exOrgB) extraInfo += `<p>交付機関: ${r.exOrg || r.exOrgB}</p>`;
+            if (r.exDetail || r.exDetailB) extraInfo += `<p>区分: ${r.exDetail || r.exDetailB}</p>`;
+            if (r.spNo) extraInfo += `<p>特教番号: ${r.spNo} (${r.spOrg || ''})</p>`;
+            if (r.mcM) extraInfo += `<p>経験機体: ${r.mcM} / ${r.mcT} / ${r.mcW}</p>`;
+            if (r.mcExp) extraInfo += `<p>経験期間: ${r.mcExp}</p>`;
+
             body.innerHTML = `
                 <div class="space-y-6">
                     <div class="bg-slate-800 p-4 rounded-2xl border border-white/5">
@@ -177,8 +196,10 @@
                         ${r.photos?.user ? `<img src="${r.photos.user}" class="w-full rounded-xl shadow-2xl">` : '<p class="text-slate-600 italic py-4 text-center">写真なし</p>'}
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        ${r.photos?.licA ? `<div class="bg-slate-800 p-2 rounded-xl"><img src="${r.photos.licA}" class="w-full rounded"></div>` : ''}
-                        ${r.photos?.licB ? `<div class="bg-slate-800 p-2 rounded-xl"><img src="${r.photos.licB}" class="w-full rounded"></div>` : ''}
+                        ${r.photos?.licA ? `<div class="bg-slate-800 p-2 rounded-xl"><span class="info-label">免許表</span><img src="${r.photos.licA}" class="w-full rounded"></div>` : ''}
+                        ${r.photos?.licB ? `<div class="bg-slate-800 p-2 rounded-xl"><span class="info-label">免許裏</span><img src="${r.photos.licB}" class="w-full rounded"></div>` : ''}
+                        ${r.photos?.spA ? `<div class="bg-slate-800 p-2 rounded-xl"><span class="info-label">特教表</span><img src="${r.photos.spA}" class="w-full rounded"></div>` : ''}
+                        ${r.photos?.emp ? `<div class="bg-slate-800 p-2 rounded-xl"><span class="info-label">事業所印</span><img src="${r.photos.emp}" class="w-full rounded"></div>` : ''}
                     </div>
                 </div>
                 <div class="space-y-4">
@@ -196,9 +217,13 @@
                 </div>
                 <div class="space-y-4">
                     <div class="bg-slate-800 p-6 rounded-xl border border-white/5 space-y-4">
-                        <div><span class="info-label">免除条件・資格</span><p class="text-xs font-bold text-emerald-400">${r.licChecked || 'なし'}</p></div>
-                        <div><span class="info-label">助成金利用</span><p class="text-xs font-bold">${r.subsidy || 'なし'}</p></div>
-                        <div><span class="info-label">領収書宛名</span><p class="text-xs font-bold">${r.receipt === '必要' ? r.receiptName : '不要'}</p></div>
+                        <span class="info-label">免除条件・詳細情報</span>
+                        <div class="text-xs font-bold text-emerald-400 leading-loose">
+                            ${extraInfo || '特記事項なし'}
+                            <p class="mt-2 text-slate-400 border-t border-white/5 pt-2">助成金利用：${r.subsidy || 'なし'}</p>
+                            <p class="text-slate-400">免除資格：${r.licChecked || 'なし'}</p>
+                            <p class="text-slate-400">領収書：${r.receipt === '必要' ? r.receiptName : '不要'}</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -226,7 +251,7 @@
             } catch (e) { alert("エラー: " + e.message); }
         };
 
-        window.sendMail = (id, type) => {
+        window.sendMail = async (id, type) => {
             const r = reservations.find(item => item.id === id);
             let sub = "", body = "";
             if(type === 'guide') {
@@ -237,6 +262,9 @@
                 body = `${r.userName} 様\n\nお申し込みは現在満員のため、キャンセル待ちとして承りました。\n空きが出次第、ご連絡いたします。`;
             }
             window.location.href = `mailto:${r.email}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+            
+            // 送信フラグを立てる
+            try { await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' }); } catch (e) {}
         };
 
         window.closeModal = () => document.getElementById('modal-overlay').classList.remove('active');
