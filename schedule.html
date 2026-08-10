@@ -3,78 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STC 管理画面 | 講習スケジュール管理</title>
+    <title>STC 管理画面 | スケジュール管理</title>
+    <!-- Tailwind & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- ★共通パーツの読み込み -->
+    <link rel="stylesheet" href="css/common.css">
+    <script src="js/common.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
-        * { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0b1120; color: #f1f5f9; display: flex; min-height: 100vh; }
-        
-        /* 統一サイドバー */
-        .sidebar { width: 260px; background: #0f172a; border-right: 1px solid rgba(56, 189, 248, 0.1); padding: 40px 20px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; }
-        .sidebar-logo { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; letter-spacing: -0.05em; }
-        .nav-link { display: flex; align-items: center; gap: 15px; padding: 14px 20px; color: #94a3b8; text-decoration: none; border-radius: 12px; font-weight: 700; transition: all 0.3s; margin-bottom: 8px; font-size: 0.85rem; position: relative; }
-        .nav-link:hover, .nav-link.active { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
-        .badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ef4444; color: white; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-family: 'Montserrat'; font-weight: 900; }
-        
-        .main-content { flex-grow: 1; padding: 60px; overflow-y: auto; background: radial-gradient(circle at top right, #1e293b, #0b1120); }
-        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 30px 40px; margin-bottom: 40px; }
-        .admin-title { font-size: 2.5rem; font-weight: 900; font-style: italic; color: #38bdf8; text-transform: uppercase; }
-
-        /* テーブルデザイン */
-        .table-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        /* スケジュール管理専用スタイル */
         .admin-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .admin-table th { padding: 20px; font-weight: 900; color: #38bdf8; font-size: 0.65rem; text-transform: uppercase; background: rgba(56, 189, 248, 0.05); border-bottom: 1px solid rgba(56, 189, 248, 0.2); }
-        .admin-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.02); font-weight: 700; font-size: 0.8rem; }
+        .admin-table th { padding: 20px; font-weight: 900; color: #00a2ff; font-size: 0.65rem; text-transform: uppercase; background: rgba(56, 189, 248, 0.05); border-bottom: 1px solid rgba(56, 189, 248, 0.2); }
+        .admin-table td { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.02); font-weight: 700; font-size: 0.85rem; }
         
-        .btn-add { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 12px 30px; border-radius: 50px; font-weight: 900; border: none; cursor: pointer; transition: 0.3s; font-style: italic; }
-        .btn-edit { color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.7rem; }
-        .btn-delete { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.7rem; }
+        .btn-add { background: linear-gradient(135deg, #00a2ff 0%, #0081cc 100%); color: white; padding: 12px 30px; border-radius: 50px; font-[900]; border: none; cursor: pointer; transition: 0.3s; font-style: italic; box-shadow: 0 10px 20px rgba(0, 162, 255, 0.2); }
+        .btn-add:hover { transform: scale(1.05); shadow: 0 15px 30px rgba(0, 162, 255, 0.4); }
 
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: #0f172a; border: 1px solid #38bdf8; border-radius: 2rem; padding: 40px; width: 95%; max-width: 500px; }
-        .input-field { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: 12px; color: #fff; font-weight: bold; margin-bottom: 20px; outline: none; }
+        .modal-content { background: #0f172a; border: 1px solid #00a2ff; border-radius: 2.5rem; padding: 50px; width: 95%; max-width: 550px; box-shadow: 0 0 100px rgba(0, 162, 255, 0.1); }
+        
+        .input-field { width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: 12px; color: #fff; font-weight: bold; margin-bottom: 20px; outline: none; transition: 0.3s; }
+        .input-field:focus { border-color: #00a2ff; background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-logo"><div class="sidebar-title">STC</div><div class="sidebar-subtitle">CONTROL PANEL</div></div>
-        <nav>
-            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> <span>ダッシュボード</span></a>
-            <a href="schedule.html" class="nav-link active"><i class="fas fa-calendar-alt"></i> <span>スケジュール管理</span></a>
-            <a href="reservations.html" class="nav-link"><i class="fas fa-users"></i> <span>予約受付管理</span><span id="new-res-badge" class="badge" style="display:none">0</span></a>
-            <a href="news.html" class="nav-link"><i class="fas fa-bullhorn"></i> <span>お知らせ管理</span></a>
-            <a href="faq.html" class="nav-link"><i class="fas fa-question-circle"></i> <span>よくある質問管理</span></a>
-            <a href="documents.html" class="nav-link"><i class="fas fa-file-alt"></i> <span>書類作成管理</span></a>
-        </nav>
-    </div>
-    
+    <!-- サイドバーは common.js が自動生成 -->
+
     <div class="main-content">
-        <div class="admin-header flex justify-between items-center">
-            <div><h1 class="admin-title uppercase">Schedule</h1><p class="text-[10px] text-slate-500 font-black tracking-widest">講習日程・定員管理</p></div>
+        <div class="flex justify-between items-start mb-12">
+            <div>
+                <h1 class="admin-page-title">Schedule</h1>
+                <p class="admin-page-subtitle">講習日程・定員のリアルタイム管理</p>
+            </div>
             <button class="btn-add" onclick="openModal()"><i class="fas fa-plus mr-2"></i> 新規講習を追加</button>
         </div>
         
-        <div class="table-container">
+        <div class="admin-card overflow-hidden !p-0">
             <table class="admin-table">
                 <thead>
                     <tr><th>講習コース</th><th>開催月</th><th>日程（表示）</th><th>定員</th><th>申込</th><th>予約</th><th>空席</th><th>操作</th></tr>
                 </thead>
-                <tbody id="schedule-list"></tbody>
+                <tbody id="schedule-list" class="text-white"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- 編集モーダル -->
+    <!-- 編集・追加モーダル -->
     <div id="modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <h2 class="text-2xl font-black text-sky-400 italic mb-8 uppercase">Edit Schedule</h2>
-            <form id="schedule-form" onsubmit="saveSchedule(event)">
-                <label class="text-[10px] font-black text-slate-500 uppercase block mb-2">講習名</label>
-                <select id="courseId" class="input-field" required onchange="autoSetCapacity(this.value)">
+        <div class="modal-content text-left">
+            <h2 class="text-3xl font-[900] text-sky-400 italic mb-8 uppercase tracking-tighter">Edit Schedule</h2>
+            <form id="schedule-form" onsubmit="window.saveSchedule(event)">
+                <label class="text-[10px] font-black text-slate-500 uppercase block mb-2 tracking-widest">講習種別</label>
+                <select id="courseId" class="input-field" required onchange="window.autoSetCapacity(this.value)">
                     <option value="">選択してください</option>
                     <option value="玉掛け技能講習">玉掛け技能講習</option>
                     <option value="小型移動式クレーン">小型移動式クレーン</option>
@@ -84,22 +67,22 @@
                     <option value="テールゲートリフター特別教育">テールゲートリフター特別教育</option>
                 </select>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase">開催月</label><input type="number" id="month" class="input-field" placeholder="7" required></div>
-                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase">定員</label><input type="number" id="capacity" class="input-field" required></div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">開催月</label><input type="number" id="month" class="input-field" placeholder="7" required></div>
+                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">定員</label><input type="number" id="capacity" class="input-field" required></div>
                 </div>
 
-                <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase">日付（例: 7/15-7/17 または 26,30）</label>
+                <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">表示用日程（例: 7/15-7/17）</label>
                 <input type="text" id="dayDisplay" class="input-field" placeholder="7/15-7/17" required>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase">開始日(数値)</label><input type="text" id="dayStart" class="input-field" placeholder="15" required></div>
-                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase">終了日(数値)</label><input type="number" id="dayEnd" class="input-field" placeholder="17"></div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">開始日（数値）</label><input type="text" id="dayStart" class="input-field" placeholder="15" required></div>
+                    <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">終了日（数値）</label><input type="number" id="dayEnd" class="input-field" placeholder="17"></div>
                 </div>
 
-                <div class="flex gap-4 mt-4">
-                    <button type="submit" class="flex-1 bg-sky-500 py-4 rounded-xl font-black uppercase shadow-lg shadow-sky-500/20">保存する</button>
-                    <button type="button" onclick="closeModal()" class="flex-1 bg-slate-700 py-4 rounded-xl font-black uppercase">キャンセル</button>
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" class="flex-1 bg-sky-500 py-4 rounded-xl font-black uppercase shadow-lg shadow-sky-500/20 text-white hover:bg-sky-400 transition-all">保存して公開</button>
+                    <button type="button" onclick="closeModal()" class="flex-1 bg-slate-800 py-4 rounded-xl font-black uppercase text-slate-400 hover:text-white transition-all">キャンセル</button>
                 </div>
             </form>
         </div>
@@ -110,7 +93,14 @@
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         
-        const firebaseConfig = { apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", 
+            authDomain: "stc-hp.firebaseapp.com", 
+            projectId: "stc-hp", 
+            storageBucket: "stc-hp.firebasestorage.app", 
+            messagingSenderId: "795332931918", 
+            appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" 
+        };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -118,7 +108,6 @@
         let schedules = [];
         let editingId = null;
 
-        // 定員の自動セット
         window.autoSetCapacity = (name) => {
             const capEl = document.getElementById('capacity');
             if (name.includes("クレーン")) capEl.value = 6;
@@ -127,40 +116,31 @@
         };
 
         signInAnonymously(auth).then(() => {
-            // スケジュール監視
             onSnapshot(collection(db, "schedules"), (snap) => {
                 schedules = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderTable();
-            });
-
-            // バッジ用：予約監視
-            onSnapshot(collection(db, "reservations"), (snap) => {
-                const newCount = snap.docs.filter(d => d.data().status === 'new').length;
-                const badge = document.getElementById('new-res-badge');
-                badge.innerText = newCount;
-                badge.style.display = newCount > 0 ? 'block' : 'none';
             });
         });
 
         function renderTable() {
             const tbody = document.getElementById('schedule-list');
             tbody.innerHTML = schedules.sort((a,b) => a.month - b.month).map(item => {
-                const moshikomi = Number(item.fullApplied || 0); // WEB本申込
-                const yoyaku = Number(item.reserved || 0);      // 予約のみ
+                const moshikomi = Number(item.fullApplied || 0);
+                const yoyaku = Number(item.reserved || 0);
                 const cap = Number(item.capacity || 10);
                 const avail = cap - (moshikomi + yoyaku);
                 
-                return `<tr>
-                    <td class="text-sky-400 font-black italic">${item.courseName}</td>
-                    <td>${item.month}月</td>
-                    <td>${item.date}</td>
-                    <td>${cap}</td>
-                    <td class="text-emerald-400">${moshikomi}</td>
-                    <td class="text-amber-400">${yoyaku}</td>
-                    <td><span class="px-3 py-1 rounded-full ${avail <= 0 ? 'bg-rose-500/20 text-rose-500' : 'bg-emerald-500/20 text-emerald-500'}">${avail}</span></td>
-                    <td>
-                        <button class="btn-edit" onclick="editSchedule('${item.id}')">編集</button>
-                        <button class="btn-delete" onclick="deleteSchedule('${item.id}')">削除</button>
+                return `<tr class="hover:bg-white/5 transition-colors">
+                    <td class="text-[#00a2ff] font-black italic">${item.courseName}</td>
+                    <td class="font-en">${item.month}月</td>
+                    <td class="font-en">${item.date}</td>
+                    <td class="text-slate-400 font-en">${cap}</td>
+                    <td class="text-emerald-400 font-en">${moshikomi}</td>
+                    <td class="text-amber-400 font-en">${yoyaku}</td>
+                    <td><span class="px-4 py-1 rounded-full font-en ${avail <= 0 ? 'bg-rose-500/20 text-rose-500' : 'bg-emerald-500/20 text-emerald-500'}">${avail}</span></td>
+                    <td class="space-x-2">
+                        <button class="bg-sky-500/10 text-sky-400 px-4 py-1.5 rounded-lg text-[10px] font-black hover:bg-sky-500 hover:text-white transition" onclick="window.editSchedule('${item.id}')">編集</button>
+                        <button class="bg-rose-500/10 text-rose-500 px-4 py-1.5 rounded-lg text-[10px] font-black hover:bg-rose-500 hover:text-white transition" onclick="window.deleteSchedule('${item.id}')">削除</button>
                     </td>
                 </tr>`;
             }).join('');
@@ -197,7 +177,7 @@
             closeModal();
         };
 
-        window.deleteSchedule = async (id) => { if(confirm("削除しますか？")) await deleteDoc(doc(db, "schedules", id)); };
+        window.deleteSchedule = async (id) => { if(confirm("本当にこの日程を削除しますか？")) await deleteDoc(doc(db, "schedules", id)); };
     </script>
 </body>
 </html>
