@@ -4,82 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STC 管理画面 | ダッシュボード</title>
+    <!-- Tailwind & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- ★共通パーツの読み込み -->
+    <link rel="stylesheet" href="css/common.css">
+    <script src="js/common.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@300;700;900&display=swap');
-        * { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0b1120; color: #f1f5f9; display: flex; min-height: 100vh; }
+        /* ダッシュボード専用：スタッツカード等の微調整 */
+        .stat-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 30px; text-align: center; }
+        .stat-number { font-family: 'Montserrat'; font-size: 2.5rem; font-weight: 900; color: #00a2ff; font-style: italic; }
+        .stat-label { font-size: 0.7rem; font-weight: 900; color: #64748b; text-transform: uppercase; margin-top: 5px; tracking: 0.1em; }
         
-        /* サイドバー共通 */
-        .sidebar { width: 260px; background: #0f172a; border-right: 1px solid rgba(56, 189, 248, 0.1); padding: 40px 20px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; }
-        .sidebar-logo { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .sidebar-title { font-size: 1.5rem; font-weight: 900; color: #38bdf8; font-style: italic; letter-spacing: -0.05em; }
-        .nav-link { display: flex; align-items: center; justify-content: justify; gap: 15px; padding: 14px 20px; color: #94a3b8; text-decoration: none; border-radius: 12px; font-weight: 700; transition: all 0.3s; margin-bottom: 8px; font-size: 0.85rem; position: relative; }
-        .nav-link:hover, .nav-link.active { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
-        
-        /* 通知バッジ */
-        .badge { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ef4444; color: white; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-family: 'Montserrat'; font-weight: 900; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
-
-        .main-content { flex-grow: 1; padding: 40px 60px; overflow-y: auto; background: radial-gradient(circle at top right, #1e293b, #0b1120); }
-        .admin-header { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 24px; padding: 30px 40px; margin-bottom: 30px; }
-        
-        /* フィルターエリア */
-        .filter-bar { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 30px; }
-        .month-selector { display: flex; align-items: center; gap: 20px; font-size: 1.5rem; font-weight: 900; font-style: italic; color: #38bdf8; }
-        .month-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(56,189,248,0.3); display: flex; align-items: center; justify-content: center; transition: 0.3s; cursor: pointer; }
-        .month-btn:hover { background: #38bdf8; color: white; }
-
-        .stat-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 25px; text-align: center; }
-        .stat-number { font-family: 'Montserrat'; font-size: 2.2rem; font-weight: 900; color: #0ea5e9; font-style: italic; }
-        .stat-label { font-size: 0.65rem; font-weight: 900; color: #64748b; text-transform: uppercase; margin-top: 5px; }
-
-        .menu-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(56,189,248,0.1); border-radius: 24px; padding: 30px; transition: 0.3s; text-decoration: none; color: inherit; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .menu-card:hover { background: rgba(56,189,248,0.05); border-color: #38bdf8; transform: translateY(-5px); }
-        .menu-card i { font-size: 2rem; color: #38bdf8; margin-bottom: 15px; }
-        .menu-card h3 { font-size: 1.1rem; font-weight: 900; italic: true; margin-bottom: 8px; }
+        .menu-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 24px; padding: 35px; transition: 0.3s; text-decoration: none; color: inherit; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .menu-card:hover { background: rgba(56, 189, 248, 0.05); border-color: #00a2ff; transform: translateY(-5px); }
+        .menu-card i { font-size: 2rem; color: #00a2ff; margin-bottom: 20px; }
+        .menu-card h3 { font-size: 1.1rem; font-[900]; italic: true; margin-bottom: 10px; color: #f1f5f9; }
         .menu-card p { font-size: 0.75rem; color: #64748b; font-weight: bold; line-height: 1.5; }
     </style>
 </head>
 <body>
-    <!-- 統一サイドバー -->
-    <div class="sidebar">
-        <div class="sidebar-logo">
-            <div class="sidebar-title">STC</div>
-            <div class="sidebar-subtitle">CONTROL PANEL</div>
-        </div>
-        <nav>
-            <a href="index.html" class="nav-link active"><i class="fas fa-home"></i> <span>ダッシュボード</span></a>
-            <a href="schedule.html" class="nav-link"><i class="fas fa-calendar-alt"></i> <span>スケジュール管理</span></a>
-            <a href="reservations.html" class="nav-link">
-                <i class="fas fa-users"></i> <span>予約受付管理</span>
-                <span id="new-res-badge" class="badge" style="display:none">0</span>
-            </a>
-            <a href="news.html" class="nav-link"><i class="fas fa-bullhorn"></i> <span>お知らせ管理</span></a>
-            <a href="faq.html" class="nav-link"><i class="fas fa-question-circle"></i> <span>よくある質問管理</span></a>
-            <a href="documents.html" class="nav-link"><i class="fas fa-file-alt"></i> <span>書類作成管理</span></a>
-        </nav>
-    </div>
-    
+    <!-- サイドバーは common.js が自動で挿入します -->
+
     <div class="main-content">
-        <div class="admin-header flex justify-between items-center">
+        <div class="flex justify-between items-start mb-10">
             <div>
-                <h1 class="text-4xl font-black italic text-sky-400 uppercase tracking-tighter">Dashboard</h1>
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em]">System Statistics & Overview</p>
+                <!-- 共通スタイルの水色タイトル -->
+                <h1 class="admin-page-title">Dashboard</h1>
+                <p class="admin-page-subtitle">システム全体の統計とクイックアクセス</p>
             </div>
             <div class="text-right">
-                <p id="today-display" class="font-black italic text-slate-400"></p>
+                <p id="today-display" class="font-black italic text-slate-500 text-sm tracking-widest"></p>
             </div>
         </div>
 
         <!-- 月別フィルター -->
-        <div class="filter-bar">
-            <div class="month-selector">
-                <div class="month-btn" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></div>
-                <span id="current-month-display">2026年 7月</span>
-                <div class="month-btn" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></div>
+        <div class="bg-white/5 border border-white/5 p-6 rounded-3xl mb-10 flex flex-wrap items-center justify-center gap-8">
+            <div class="flex items-center gap-6">
+                <button onclick="changeMonth(-1)" class="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-sky-500 transition-all cursor-pointer"><i class="fas fa-chevron-left"></i></button>
+                <span id="current-month-display" class="font-[900] italic text-3xl text-sky-400 min-w-[160px] text-center font-en">2026年 7月</span>
+                <button onclick="changeMonth(1)" class="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-sky-500 transition-all cursor-pointer"><i class="fas fa-chevron-right"></i></button>
             </div>
-            <select id="course-filter" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 font-bold text-sm outline-none focus:border-sky-500 transition-all">
+            <select id="course-filter" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-3 font-bold text-sm outline-none focus:border-sky-500 transition-all text-white">
                 <option value="all">すべての講習コース</option>
                 <option value="玉掛け">玉掛け技能講習</option>
                 <option value="フォーク">フォークリフト運転</option>
@@ -89,7 +57,7 @@
         </div>
         
         <!-- 統計情報 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <div class="stat-card border-b-4 border-b-sky-500">
                 <div class="stat-number" id="monthly-schedules">0</div>
                 <div class="stat-label">選択月の開催数</div>
@@ -104,7 +72,7 @@
             </div>
         </div>
         
-        <!-- クイックメニュー：新着順に並び替え -->
+        <!-- クイックメニュー -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <a href="schedule.html" class="menu-card">
                 <i class="fas fa-calendar-plus"></i>
@@ -116,124 +84,80 @@
                 <h3>予約受付</h3>
                 <p>HPからの申込みを確認</p>
             </a>
+            <a href="blog-manager.html" class="menu-card border-accent/30 bg-accent/5">
+                <i class="fas fa-edit"></i>
+                <h3>ブログ投稿</h3>
+                <p>現場レポートを即時アップ</p>
+            </a>
             <a href="news.html" class="menu-card">
                 <i class="fas fa-bullhorn"></i>
                 <h3>お知らせ</h3>
-                <p>HPトップへの緊急告知</p>
-            </a>
-            <a href="faq.html" class="menu-card">
-                <i class="fas fa-question-circle"></i>
-                <h3>FAQ管理</h3>
-                <p>よくある質問の追加・編集</p>
+                <p>トップへの緊急告知管理</p>
             </a>
         </div>
     </div>
     
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    
-    const firebaseConfig = { 
-        apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", 
-        authDomain: "stc-hp.firebaseapp.com", 
-        projectId: "stc-hp", 
-        storageBucket: "stc-hp.firebasestorage.app", 
-        messagingSenderId: "795332931918", 
-        appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" 
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", 
+            authDomain: "stc-hp.firebaseapp.com", 
+            projectId: "stc-hp", 
+            storageBucket: "stc-hp.firebasestorage.app", 
+            messagingSenderId: "795332931918", 
+            appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-    let currentYear = 2026;
-    let currentMonth = 7;
-    let allSchedules = [];
-    let allReservations = [];
+        let currentYear = 2026;
+        let currentMonth = 7;
+        let allSchedules = [];
+        let allReservations = [];
 
-    // 月変更ボタン
-    window.changeMonth = (diff) => {
-        currentMonth += diff;
-        if (currentMonth > 12) { currentMonth = 1; currentYear++; }
-        if (currentMonth < 1) { currentMonth = 12; currentYear--; }
-        updateDisplay();
-    };
+        window.changeMonth = (diff) => {
+            currentMonth += diff;
+            if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+            if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+            updateDisplay();
+        };
 
-    function updateDisplay() {
-        document.getElementById('current-month-display').innerText = `${currentYear}年 ${currentMonth}月`;
-        const courseFilter = document.getElementById('course-filter').value;
+        function updateDisplay() {
+            document.getElementById('current-month-display').innerText = `${currentYear}年 ${currentMonth}月`;
+            const courseFilter = document.getElementById('course-filter').value;
+            const filteredSchedules = allSchedules.filter(s => {
+                const sMonth = Number(s.month);
+                const matchMonth = sMonth === currentMonth;
+                const matchCourse = courseFilter === 'all' || (s.courseName && s.courseName.includes(courseFilter));
+                return matchMonth && matchCourse;
+            });
+            document.getElementById('monthly-schedules').textContent = filteredSchedules.length;
+            document.getElementById('monthly-reservations').textContent = allReservations.filter(r => courseFilter === 'all' || (r.courseName && r.courseName.includes(courseFilter))).length;
+            
+            let totalAvailable = 0;
+            filteredSchedules.forEach(s => {
+                totalAvailable += ((Number(s.capacity) || 10) - (Number(s.reserved) || 0));
+            });
+            document.getElementById('monthly-available').textContent = totalAvailable;
+        }
 
-        // 1. スケジュール集計
-        const filteredSchedules = allSchedules.filter(s => {
-            const sMonth = Number(s.month); // 確実に数値に変換
-            const matchMonth = sMonth === currentMonth;
-            const matchCourse = courseFilter === 'all' || (s.courseName && s.courseName.includes(courseFilter));
-            return matchMonth && matchCourse;
-        });
-        document.getElementById('monthly-schedules').textContent = filteredSchedules.length;
-
-        // 2. 予約数集計（予約データ内の日付やコース名で紐付け）
-        const filteredReservations = allReservations.filter(r => {
-            // 予約データが持つ講習名がフィルターに合うか
-            const matchCourse = courseFilter === 'all' || (r.courseName && r.courseName.includes(courseFilter));
-            // 本来は日付（7/15など）から月を出す必要がありますが、まずは簡易的にコース一致のみ
-            return matchCourse;
-        });
-        document.getElementById('monthly-reservations').textContent = filteredReservations.length;
-
-        // 3. 空席合計の計算
-        let totalAvailable = 0;
-        filteredSchedules.forEach(s => {
-            const cap = Number(s.capacity) || 10; // 定員設定がない場合は10
-            const res = Number(s.reserved) || 0; // 予約済み数
-            totalAvailable += (cap - res);
-        });
-        document.getElementById('monthly-available').textContent = totalAvailable;
-    }
-
-        // 匿名ログインを実行
-    signInAnonymously(auth)
-        .then(() => {
-            console.log("Firebase Auth Success");
-
-            // 1. スケジュール監視
+        signInAnonymously(auth).then(() => {
             onSnapshot(collection(db, "schedules"), (snap) => {
-                allSchedules = snap.docs.map(doc => {
-                    const data = doc.data();
-                    console.log("取得講習:", data.courseName, "月:", data.month);
-                    return { id: doc.id, ...data };
-                });
+                allSchedules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 updateDisplay();
             });
-
-            // 2. 予約監視
             onSnapshot(collection(db, "reservations"), (snap) => {
                 allReservations = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                const newCount = allReservations.filter(r => r.status === 'new').length;
-                const badge = document.getElementById('new-res-badge');
-                if (badge) {
-                    badge.innerText = newCount;
-                    badge.style.display = newCount > 0 ? 'block' : 'none';
-                }
                 updateDisplay();
             });
-        })
-        .catch((error) => {
-            console.error("Firebase Auth Error:", error.code, error.message);
-            alert("ログインエラーが発生しました。設定を確認してください。");
         });
 
-    // フィルター変更イベント
-    document.getElementById('course-filter').addEventListener('change', updateDisplay);
-    
-    // 今日の日付表示
-    const todayDisplayEl = document.getElementById('today-display');
-    if (todayDisplayEl) {
-        todayDisplayEl.innerText = new Date().toLocaleDateString('ja-JP', {
-            year:'numeric', month:'long', day:'numeric', weekday:'long'
-        });
-    }
+        document.getElementById('course-filter').addEventListener('change', updateDisplay);
+        document.getElementById('today-display').innerText = new Date().toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
     </script>
 </body>
 </html>
