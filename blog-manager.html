@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STC 管理画面 | ブログ投稿管理</title>
+    <!-- Tailwind & FontAwesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- ★共通パーツの読み込み（相対パスに注意してください） -->
+    <link rel="stylesheet" href="css/common.css">
+    <script src="js/common.js"></script>
+
+    <style>
+        /* このページ専用の微調整 */
+        input, textarea, select { 
+            background: rgba(0,0,0,0.3); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 12px; 
+            padding: 15px; 
+            width: 100%; 
+            color: white; 
+            outline: none; 
+            margin-top: 10px; 
+            transition: 0.3s; 
+        }
+        input:focus, textarea:focus { border-color: #00a2ff; background: rgba(0, 162, 255, 0.05); }
+        .image-drop-zone { 
+            width: 100%; 
+            height: 250px; 
+            background: rgba(0,0,0,0.2); 
+            border: 2px dashed rgba(255,255,255,0.1); 
+            border-radius: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; 
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .image-drop-zone:hover { border-color: #00a2ff; background: rgba(0, 162, 255, 0.05); }
+    </style>
+</head>
+<body>
+    <!-- サイドバーは common.js が自動で挿入します -->
+
+    <div class="main-content">
+        <!-- 共通スタイルの水色タイトル -->
+        <h1 class="admin-page-title">Blog Post</h1>
+        <p class="admin-page-subtitle">現場の熱量をHPへ即時アップロード</p>
+
+        <div class="admin-card text-left">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-8">
+                <!-- 左側：入力エリア -->
+                <div class="space-y-6">
+                    <div>
+                        <label class="text-[10px] font-black text-sky-400 uppercase tracking-widest italic">Category</label>
+                        <select id="blog-category">
+                            <option value="現場レポート">現場レポート</option>
+                            <option value="法改正情報">法改正情報</option>
+                            <option value="お知らせ">お知らせ</option>
+                            <option value="講師ブログ">講師ブログ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-sky-400 uppercase tracking-widest italic">Title</label>
+                        <input type="text" id="blog-title" placeholder="記事のタイトルを入力...">
+                    </div>
+                </div>
+
+                <!-- 右側：画像アップロード -->
+                <div>
+                    <label class="text-[10px] font-black text-sky-400 uppercase tracking-widest italic">Cover Image</label>
+                    <div class="image-drop-zone mt-2" onclick="document.getElementById('blog-image').click()">
+                        <div id="placeholder-text" class="text-center">
+                            <i class="fas fa-camera text-4xl text-slate-700 mb-3"></i>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Upload Photo</p>
+                        </div>
+                        <img id="img-preview" class="w-full h-full object-cover hidden">
+                    </div>
+                    <input type="file" id="blog-image" accept="image/*" class="hidden" onchange="previewImage(this)">
+                </div>
+            </div>
+
+            <!-- 本文エリア -->
+            <div class="mb-10">
+                <label class="text-[10px] font-black text-sky-400 uppercase tracking-widest italic">Content</label>
+                <textarea id="blog-content" rows="12" placeholder="ここに本文を入力してください。改行は自動で反映されます。"></textarea>
+            </div>
+
+            <!-- 送信ボタン -->
+            <button onclick="uploadBlog()" id="submit-btn" class="w-full bg-[#00a2ff] hover:bg-white hover:text-[#001a33] text-white py-5 rounded-2xl font-[900] text-xl italic uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-4">
+                <i class="fas fa-paper-plane"></i> 記事を公開する
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw",
+            authDomain: "stc-hp.firebaseapp.com",
+            projectId: "stc-hp",
+            storageBucket: "stc-hp.firebasestorage.app",
+            messagingSenderId: "795332931918",
+            appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let imageData = "";
+
+        // 画像プレビュー & リサイズ（HPを重くしない工夫）
+        window.previewImage = (input) => {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX = 1200; 
+                        const scale = MAX / img.width;
+                        canvas.width = MAX; canvas.height = img.height * scale;
+                        canvas.getContext('2d').drawImage(img, 0, 0, MAX, canvas.height);
+                        imageData = canvas.toDataURL('image/jpeg', 0.8);
+                        
+                        document.getElementById('img-preview').src = imageData;
+                        document.getElementById('img-preview').classList.remove('hidden');
+                        document.getElementById('placeholder-text').classList.add('hidden');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        // 送信処理
+        window.uploadBlog = async () => {
+            const title = document.getElementById('blog-title').value;
+            const content = document.getElementById('blog-content').value;
+            const category = document.getElementById('blog-category').value;
+            const btn = document.getElementById('submit-btn');
+
+            if (!title || !content) { alert("タイトルと本文を入力してください！"); return; }
+
+            btn.disabled = true; 
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 公開しています...';
+
+            try {
+                await signInAnonymously(auth);
+                await addDoc(collection(db, "blogs"), {
+                    title: title,
+                    content: content,
+                    category: category,
+                    image: imageData, 
+                    summary: content.substring(0, 100), 
+                    createdAt: serverTimestamp()
+                });
+                alert("HPへの公開が完了しました！");
+                location.href = 'index.html'; 
+            } catch (e) {
+                console.error(e);
+                alert("送信エラーが発生しました。");
+                btn.disabled = false;
+                btn.innerText = "記事を公開する";
+            }
+        };
+    </script>
+</body>
+</html>
