@@ -1,34 +1,103 @@
-/* 共通スタイル */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Noto+Sans+JP:wght@400;700;900&display=swap');
 
-/* サイドバー固定表示 */
+:root {
+    --navy-dark: #0b1120;
+    --navy-side: #0f172a;
+    --accent-blue: #00a2ff;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+}
+
+* { font-family: 'Noto Sans JP', sans-serif; box-sizing: border-box; }
+body { background: var(--navy-dark); color: var(--text-main); margin: 0; display: flex; min-height: 100vh; }
+
+/* サイドバー：重厚感と透過の融合 */
 .sidebar {
-    background: rgba(15, 23, 42, 0.9);
-    border-right: 1px solid rgba(56, 189, 248, 0.2);
+    background: var(--navy-side);
+    border-right: 1px solid rgba(56, 189, 248, 0.1);
     min-height: 100vh;
-    padding: 30px 20px;
+    padding: 40px 20px;
     position: fixed;
     left: 0;
     top: 0;
-    width: 280px;
+    width: 260px;
+    z-index: 100;
 }
 
+.sidebar-logo {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--accent-blue);
+    font-style: italic;
+    letter-spacing: -0.05em;
+}
+
+/* ナビゲーションリンク */
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 14px 20px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 700;
+    transition: all 0.3s;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+
+.nav-link:hover, .nav-link.active {
+    background: rgba(0, 162, 255, 0.1);
+    color: var(--accent-blue);
+}
+
+/* メインコンテンツエリア */
 .main-content {
-    margin-left: 280px;
-    padding: 40px;
+    margin-left: 260px;
+    flex-grow: 1;
+    padding: 60px;
+    background: radial-gradient(circle at top right, #1e293b, #0b1120);
+    min-height: 100vh;
 }
 
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-    .sidebar {
-        width: 280px;
-        height: 100vh;
-        position: fixed;
-        left: 0;
-        top: 0;
-    }
-    
-    .main-content {
-        margin-left: 280px;
-        padding: 40px;
-    }
+/* ★こだわりの水色表題スタイル */
+.admin-page-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--accent-blue);
+    font-style: italic;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.admin-page-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    margin-bottom: 50px;
+    text-align: left;
+}
+
+/* 入力フォームの共通デザイン */
+.admin-card {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 24px;
+    padding: 40px;
 }
