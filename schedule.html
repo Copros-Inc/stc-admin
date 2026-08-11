@@ -79,7 +79,16 @@
                     <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">開始日（数値）</label><input type="text" id="dayStart" class="input-field" placeholder="15" required></div>
                     <div><label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">終了日（数値）</label><input type="number" id="dayEnd" class="input-field" placeholder="17"></div>
                 </div>
-
+                <div class="grid grid-cols-2 gap-6 mt-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">現在の申込数</label>
+                        <input type="number" id="fullApplied" class="input-field" placeholder="0" min="0">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">現在の予約数</label>
+                        <input type="number" id="reserved" class="input-field" placeholder="0" min="0">
+                    </div>
+                </div>
                 <div class="flex gap-4 mt-6">
                     <button type="submit" class="flex-1 bg-sky-500 py-4 rounded-xl font-black uppercase shadow-lg shadow-sky-500/20 text-white hover:bg-sky-400 transition-all">保存して公開</button>
                     <button type="button" onclick="closeModal()" class="flex-1 bg-slate-800 py-4 rounded-xl font-black uppercase text-slate-400 hover:text-white transition-all">キャンセル</button>
@@ -158,10 +167,13 @@
             document.getElementById('dayEnd').value = item.dayEnd;
             document.getElementById('dayDisplay').value = item.date;
             document.getElementById('capacity').value = item.capacity;
+            // 以下の2行を追加して数値をフォームに表示させます
+            document.getElementById('fullApplied').value = item.fullApplied || 0;
+            document.getElementById('reserved').value = item.reserved || 0;
             document.getElementById('modal-overlay').classList.add('active');
         };
 
-        window.saveSchedule = async (e) => {
+          window.saveSchedule = async (e) => {
             e.preventDefault();
             const data = {
                 courseName: document.getElementById('courseId').value,
@@ -170,10 +182,13 @@
                 dayEnd: parseInt(document.getElementById('dayEnd').value) || 0,
                 date: document.getElementById('dayDisplay').value,
                 capacity: parseInt(document.getElementById('capacity').value),
+                // 手動入力された数値をFirestoreに送る
+                fullApplied: parseInt(document.getElementById('fullApplied').value) || 0,
+                reserved: parseInt(document.getElementById('reserved').value) || 0,
                 status: 'ok'
             };
             if (editingId) await updateDoc(doc(db, "schedules", editingId), data);
-            else await addDoc(collection(db, "schedules"), { ...data, reserved: 0, fullApplied: 0 });
+            else await addDoc(collection(db, "schedules"), data);
             closeModal();
         };
 
