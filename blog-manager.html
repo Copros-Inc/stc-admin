@@ -93,10 +93,18 @@
                 <textarea id="blog-content" rows="12" placeholder="ここに本文を入力してください。改行は自動で反映されます。"></textarea>
             </div>
 
-            <!-- 送信ボタン -->
-            <button onclick="uploadBlog()" id="submit-btn" class="w-full bg-[#00a2ff] hover:bg-white hover:text-[#001a33] text-white py-5 rounded-2xl font-[900] text-xl italic uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-4">
-                <i class="fas fa-paper-plane"></i> 記事を公開する
-            </button>
+                       <!-- 送信ボタン ＆ 確認ボタン -->
+            <div class="flex gap-4 mb-10">
+                <button onclick="uploadBlog()" id="submit-btn" class="flex-1 bg-[#00a2ff] hover:bg-white hover:text-[#001a33] text-white py-5 rounded-2xl font-[900] text-xl italic uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-4">
+                    <i class="fas fa-paper-plane"></i> <span id="btn-text">記事を公開する</span>
+                </button>
+                
+                <!-- HP確認ボタン（別タブで開く） -->
+                <a href="blog.html" target="_blank" class="bg-white/10 hover:bg-white/20 text-white px-8 py-5 rounded-2xl font-black italic border border-white/20 flex items-center justify-center" title="HPを確認">
+                    <i class="fas fa-external-link-alt text-xl"></i>
+                </a>
+            </div>
+            
         </div>
              <!-- 一覧表示エリア -->
             <div class="mt-20">
@@ -107,10 +115,9 @@
             </div>     
     </div>
 
-    <!-- Firebase Logic -->
-    <script type="module">
+        <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const firebaseConfig = { 
@@ -126,13 +133,15 @@
         const auth = getAuth(app);
 
         let imageData = "";
+        let editingId = null; // 編集中のID
 
-        // ページ読み込み時に今日の日付をセット
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('blog-date').value = new Date().toISOString().split('T')[0];
-});
-        
-        // 画像プレビュー & リサイズ（HPを重くしない工夫）
+        // 今日をセット
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('blog-date').value = new Date().toISOString().split('T')[0];
+            loadAdminBlogList();
+        });
+
+        // 画像プレビュー
         window.previewImage = (input) => {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
@@ -145,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         canvas.width = MAX; canvas.height = img.height * scale;
                         canvas.getContext('2d').drawImage(img, 0, 0, MAX, canvas.height);
                         imageData = canvas.toDataURL('image/jpeg', 0.8);
-                        
                         document.getElementById('img-preview').src = imageData;
                         document.getElementById('img-preview').classList.remove('hidden');
                         document.getElementById('placeholder-text').classList.add('hidden');
@@ -156,100 +164,96 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-               // 送信処理（修正版）
+        // 編集モード
+        window.editBlog = (id, title, content, category, image, date) => {
+            editingId = id;
+            document.getElementById('blog-title').value = title;
+            document.getElementById('blog-content').value = content;
+            document.getElementById('blog-category').value = category;
+            document.getElementById('blog-date').value = date;
+            
+            if (image) {
+                imageData = image;
+                document.getElementById('img-preview').src = image;
+                document.getElementById('img-preview').classList.remove('hidden');
+                document.getElementById('placeholder-text').classList.add('hidden');
+            } else {
+                document.getElementById('img-preview').classList.add('hidden');
+                document.getElementById('placeholder-text').classList.remove('hidden');
+                imageData = "";
+            }
+            
+            document.getElementById('btn-text').innerText = "内容を更新する";
+            document.getElementById('submit-btn').classList.replace('bg-[#00a2ff]', 'bg-emerald-500');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // 公開・更新処理
         window.uploadBlog = async () => {
             const title = document.getElementById('blog-title').value;
             const content = document.getElementById('blog-content').value;
             const category = document.getElementById('blog-category').value;
-            const postDate = document.getElementById('blog-date').value; // 入力された日付を取得
+            const postDate = document.getElementById('blog-date').value;
             const btn = document.getElementById('submit-btn');
 
-            if (!title || !content) { 
-                alert("タイトルと本文を入力してください！"); 
-                return; 
-            }
-
-            btn.disabled = true; 
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 公開しています...';
+            if (!title || !content) { alert("タイトルと本文を入力してください！"); return; }
+            btn.disabled = true;
 
             try {
-                // 1. ログイン確認（未ログインなら匿名ログイン）
-                if (!auth.currentUser) {
-                    await signInAnonymously(auth);
+                if (!auth.currentUser) await signInAnonymously(auth);
+                const blogData = {
+                    title: title, content: content, category: category, image: imageData,
+                    summary: content.substring(0, 100),
+                    createdAt: postDate ? new Date(postDate) : new Date()
+                };
+
+                if (editingId) {
+                    await updateDoc(doc(db, "blogs", editingId), blogData);
+                    alert("更新完了！");
+                } else {
+                    await addDoc(collection(db, "blogs"), blogData);
+                    alert("公開完了！");
                 }
 
-                // 2. Firestoreへ追加（ここがHP側の読み込みと連動します）
-                await addDoc(collection(db, "blogs"), {
-                    title: title,
-                    content: content,
-                    category: category,
-                    image: imageData, // previewImageで作成された画像データ
-                    summary: content.substring(0, 100),
-                    createdAt: postDate ? new Date(postDate) : new Date() // HP側が読み込む名前に修正
-                });
-
-                alert("HPへの公開が完了しました！");
-                location.href = 'index.html'; // 完了後にトップへ戻る
-            } catch (e) {
-                console.error("Upload error:", e);
-                alert("送信エラーが発生しました。詳細: " + e.message);
+                // リセット
+                editingId = null;
+                document.getElementById('blog-title').value = "";
+                document.getElementById('blog-content').value = "";
+                document.getElementById('img-preview').classList.add('hidden');
+                document.getElementById('placeholder-text').classList.remove('hidden');
+                imageData = "";
+                document.getElementById('btn-text').innerText = "記事を公開する";
+                document.getElementById('submit-btn').classList.replace('bg-emerald-500', 'bg-[#00a2ff]');
                 btn.disabled = false;
-                btn.innerText = "記事を公開する";
-                
-            }
+            } catch (e) { alert("エラーが発生しました。"); btn.disabled = false; }
         };
 
-                // ブログ一覧の読み込み（管理用）
+        // 一覧表示
         function loadAdminBlogList() {
             const listEl = document.getElementById('admin-blog-list');
             const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
-
             onSnapshot(q, (snapshot) => {
-                if (snapshot.empty) {
-                    listEl.innerHTML = '<p class="text-slate-500 italic p-10 bg-black/20 rounded-2xl">投稿された記事はありません。</p>';
-                    return;
-                }
-
                 listEl.innerHTML = snapshot.docs.map(blogDoc => {
-                    const data = blogDoc.data();
-                    let dateStr = '---';
-                    if (data.createdAt) {
-                        const dateObj = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-                        dateStr = dateObj.toLocaleDateString('ja-JP');
-                    }
-                    
+                    const d = blogDoc.data();
+                    const date = d.createdAt?.toDate().toISOString().split('T')[0] || '';
                     return `
-                        <div class="flex items-center justify-between bg-black/30 p-4 rounded-2xl border border-white/5 hover:border-sky-500/50 transition">
+                        <div class="flex items-center justify-between bg-black/30 p-4 rounded-2xl border border-white/5 mb-3">
                             <div class="flex items-center gap-4 text-left">
-                                ${data.image ? `<img src="${data.image}" class="w-12 h-12 object-cover rounded-lg">` : `<div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center"><i class="fas fa-image text-slate-600"></i></div>`}
-                                <div>
-                                    <h5 class="text-white font-bold text-sm line-clamp-1">${data.title}</h5>
-                                    <p class="text-[10px] text-slate-500 font-black italic">${dateStr} | ${data.category}</p>
-                                </div>
+                                ${d.image ? `<img src="${d.image}" class="w-10 h-10 object-cover rounded">` : `<div class="w-10 h-10 bg-slate-800 rounded"></div>`}
+                                <div class="text-white text-xs font-bold">${d.title}</div>
                             </div>
-                            <button onclick="deleteBlog('${blogDoc.id}')" class="text-slate-500 hover:text-red-500 p-3 transition">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    `;
+                            <div class="flex gap-2">
+                                <button onclick="editBlog('${blogDoc.id}', \`${d.title}\`, \`${d.content}\`, '${d.category}', '${d.image || ''}', '${date}')" class="text-sky-400 p-2"><i class="fas fa-edit"></i></button>
+                                <button onclick="deleteBlog('${blogDoc.id}')" class="text-slate-500 p-2"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>`;
                 }).join('');
             });
         }
 
-        // 削除処理
         window.deleteBlog = async (id) => {
-            if (!confirm("この記事を完全に削除してもよろしいですか？")) return;
-            try {
-                await deleteDoc(doc(db, "blogs", id));
-                alert("記事を削除しました。");
-            } catch (e) {
-                console.error("Delete error:", e);
-                alert("削除に失敗しました。");
-            }
+            if (confirm("削除しますか？")) await deleteDoc(doc(db, "blogs", id));
         };
-
-        // 実行
-        loadAdminBlogList();
     </script>
 </body>
 </html>
