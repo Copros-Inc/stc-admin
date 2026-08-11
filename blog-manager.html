@@ -66,6 +66,10 @@
                     <div>
                         <label class="text-[10px] font-black text-sky-400 uppercase tracking-widest italic">Title</label>
                         <input type="text" id="blog-title" placeholder="記事のタイトルを入力...">
+                    <div>
+                        <label class="text-[10px] font-black text-sky-400 uppercase tracking-widest italic">Post Date</label>
+                        <input type="date" id="blog-date" style="color-scheme: dark;">
+                    </div>
                     </div>
                 </div>
 
@@ -116,6 +120,11 @@
 
         let imageData = "";
 
+        // ページ読み込み時に今日の日付をセット
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('blog-date').value = new Date().toISOString().split('T')[0];
+});
+        
         // 画像プレビュー & リサイズ（HPを重くしない工夫）
         window.previewImage = (input) => {
             if (input.files && input.files[0]) {
@@ -160,7 +169,7 @@
                     category: category,
                     image: imageData, 
                     summary: content.substring(0, 100), 
-                    createdAt: serverTimestamp()
+                    window.previewImage: document.getElementById('blog-date').value ? new Date(document.getElementById('blog-date').value) : new Date(),
                 });
                 alert("HPへの公開が完了しました！");
                 location.href = 'index.html'; 
