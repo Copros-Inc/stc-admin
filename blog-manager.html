@@ -198,7 +198,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 
             }
         };
-        
+
+                // ブログ一覧の読み込み（管理用）
+        function loadAdminBlogList() {
+            const listEl = document.getElementById('admin-blog-list');
+            const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
+
+            onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    listEl.innerHTML = '<p class="text-slate-500 italic p-10 bg-black/20 rounded-2xl">投稿された記事はありません。</p>';
+                    return;
+                }
+
+                listEl.innerHTML = snapshot.docs.map(blogDoc => {
+                    const data = blogDoc.data();
+                    let dateStr = '---';
+                    if (data.createdAt) {
+                        const dateObj = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+                        dateStr = dateObj.toLocaleDateString('ja-JP');
+                    }
+                    
+                    return `
+                        <div class="flex items-center justify-between bg-black/30 p-4 rounded-2xl border border-white/5 hover:border-sky-500/50 transition">
+                            <div class="flex items-center gap-4 text-left">
+                                ${data.image ? `<img src="${data.image}" class="w-12 h-12 object-cover rounded-lg">` : `<div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center"><i class="fas fa-image text-slate-600"></i></div>`}
+                                <div>
+                                    <h5 class="text-white font-bold text-sm line-clamp-1">${data.title}</h5>
+                                    <p class="text-[10px] text-slate-500 font-black italic">${dateStr} | ${data.category}</p>
+                                </div>
+                            </div>
+                            <button onclick="deleteBlog('${blogDoc.id}')" class="text-slate-500 hover:text-red-500 p-3 transition">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        // 削除処理
+        window.deleteBlog = async (id) => {
+            if (!confirm("この記事を完全に削除してもよろしいですか？")) return;
+            try {
+                await deleteDoc(doc(db, "blogs", id));
+                alert("記事を削除しました。");
+            } catch (e) {
+                console.error("Delete error:", e);
+                alert("削除に失敗しました。");
+            }
+        };
+
+        // 実行
+        loadAdminBlogList();
     </script>
 </body>
 </html>
