@@ -149,33 +149,43 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // 送信処理
+               // 送信処理（修正版）
         window.uploadBlog = async () => {
             const title = document.getElementById('blog-title').value;
             const content = document.getElementById('blog-content').value;
             const category = document.getElementById('blog-category').value;
+            const postDate = document.getElementById('blog-date').value; // 入力された日付を取得
             const btn = document.getElementById('submit-btn');
 
-            if (!title || !content) { alert("タイトルと本文を入力してください！"); return; }
+            if (!title || !content) { 
+                alert("タイトルと本文を入力してください！"); 
+                return; 
+            }
 
             btn.disabled = true; 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 公開しています...';
 
             try {
-                await signInAnonymously(auth);
+                // 1. ログイン確認（未ログインなら匿名ログイン）
+                if (!auth.currentUser) {
+                    await signInAnonymously(auth);
+                }
+
+                // 2. Firestoreへ追加（ここがHP側の読み込みと連動します）
                 await addDoc(collection(db, "blogs"), {
                     title: title,
                     content: content,
                     category: category,
-                    image: imageData, 
-                    summary: content.substring(0, 100), 
-                    window.previewImage: document.getElementById('blog-date').value ? new Date(document.getElementById('blog-date').value) : new Date(),
+                    image: imageData, // previewImageで作成された画像データ
+                    summary: content.substring(0, 100),
+                    createdAt: postDate ? new Date(postDate) : new Date() // HP側が読み込む名前に修正
                 });
+
                 alert("HPへの公開が完了しました！");
-                location.href = 'index.html'; 
+                location.href = 'index.html'; // 完了後にトップへ戻る
             } catch (e) {
-                console.error(e);
-                alert("送信エラーが発生しました。");
+                console.error("Upload error:", e);
+                alert("送信エラーが発生しました。詳細: " + e.message);
                 btn.disabled = false;
                 btn.innerText = "記事を公開する";
             }
