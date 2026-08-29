@@ -167,15 +167,24 @@
             const r = reservations.find(item => item.id === id);
             const body = document.getElementById('modal-body');
             let detailsHtml = "";
-            const row = (label, val) => { if(val && val !== "undefined") detailsHtml += `<div class="mb-6 border-b border-white/5 pb-3 text-left"><span class="block text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">${label}</span><p class="text-white font-bold text-lg leading-relaxed">${val}</p></div>`; };
+            const row = (label, val) => { if(val && val !== "undefined" && val !== "") detailsHtml += `<div class="mb-6 border-b border-white/5 pb-3 text-left"><span class="block text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">${label}</span><p class="text-white font-bold text-lg leading-relaxed">${val}</p></div>`; };
 
+            row("申込種別", r.mode === 'full' ? '本申込' : r.status === 'waiting' ? 'キャンセル待ち' : '仮予約（仮押さえ）');
             row("氏名(フリガナ)", `${r.userName} (${r.userKana || ''})`);
+            row("旧姓・通称の併記", r.maidenName);
             row("生年月日", r.birthDate);
             row("現住所", r.address ? `〒${r.zip || ''} ${r.address}` : null);
             row("連絡先", `TEL: ${r.phone} / MAIL: ${r.email}`);
-            row("勤務先", `${r.company || 'なし'} (TEL: ${r.compPhone || '-'})`);
-            row("免除区分/資格", r.exType || r.f11 || r.licNo || '-');
+            row("勤務先", `${r.company || 'なし'} (TEL: ${r.compPhone || '-'}) / 住所: ${r.compAddress || '-'}`);
+            
+            // 免除条件の詳細
+            row("免除区分", r.exType);
+            row("資格詳細(A)", r.licKindA ? `${r.licKindA} / 日付: ${r.exDateA} / 番号: ${r.exNoA} / 機関: ${r.exOrgA}` : null);
+            row("資格詳細(B)", r.licKindB ? `${r.licKindB} / 取得日: ${r.exDateB}` : null);
+            row("免許証(31H)", r.licNo);
+            
             row("助成金利用", r.subsidy);
+            row("領収書宛名", r.receipt === "必要" ? r.receiptName : "不要");
 
             body.innerHTML = `
                 <div class="space-y-8">
@@ -214,7 +223,23 @@
 
         window.sendMail = async (id, type) => {
             const r = reservations.find(item => item.id === id);
-            let sub = `【STC下関】受講案内：${r.courseName}`, body = `${r.userName} 様\n\nお申し込みありがとうございます。受付が完了いたしました。\n講習名：${r.courseName}\n日程：${r.courseDate}\n\n当日お待ちしております。`;
+            let sub = "", body = "";
+
+            if (type === 'simple') {
+                // 仮予約の人への「書類提出（本申込）依頼」メール
+                sub = `【STC下関】仮予約の確認と本申込のお願い：${r.courseName}`;
+                // 自動で本申込用のURLを生成
+                const applyUrl = `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full`;
+                
+                body = `${r.userName} 様\n\n下関トレーニングセンターです。仮予約を承りました。\n\nお席を確保いたしましたが、現在「仮予約」の状態です。\n以下のリンクより、写真の添付と本申込のお手続きを7日以内にお願いいたします。\n\n▼本申込用URL\n${applyUrl}\n\n※期限を過ぎますとキャンセル待ちの方へ枠を譲る場合がございますのでご注意ください。`;
+            } else if (type === 'waiting') {
+                sub = `【STC下関】キャンセル待ち受付のお知らせ：${r.courseName}`;
+                body = `${r.userName} 様\n\nキャンセル待ちにて受付いたしました。空きが出次第、順次ご連絡差し上げます。`;
+            } else {
+                sub = `【STC下関】受講案内：${r.courseName}`;
+                body = `${r.userName} 様\n\nお申し込みありがとうございました。受付が完了いたしました。\n当日、以下の日程でお待ちしております。\n\n講習名：${r.courseName}\n日程：${r.courseDate}`;
+            }
+
             window.location.href = `mailto:${r.email}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
             await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
         };
