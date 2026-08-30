@@ -207,21 +207,22 @@
             try {
                 let updateData = { status: status };
 
-                // --- [改善版] 受付確定時に番号を発行（例：小型-0916-1） ---
+                // --- [決定版] 講習・日程ごとに独立した連番を振る（例：玉掛-0914-1） ---
                 if (status === 'accepted' && !r.regNo) {
+                    // 1. 同一講習・同一日程で、すでに番号を持っている人数を数える
                     const qCount = query(collection(db, "reservations"), 
                         where("courseName", "==", r.courseName), 
-                        where("courseDate", "==", r.courseDate),
-                        where("status", "==", "accepted"));
+                        where("courseDate", "==", r.courseDate));
                     const countSnap = await getDocs(qCount);
-                    const nextNum = countSnap.size + 1;
+                    // すでに regNo（番号）が書き込まれているデータだけをフィルタリングしてカウント
+                    const nextNum = countSnap.docs.filter(doc => doc.data().regNo).length + 1;
 
                     const prefix = r.courseName.substring(0, 2); 
                     
-                    // 日付フォーマットの修正: "9/16-9/18" -> "0916"
-                    const firstDate = r.courseDate.split('-')[0]; // "9/16" を取得
+                    // 日付フォーマットの修正: "9/14-9/16" -> "0914"
+                    const firstDate = r.courseDate.split('-')[0].trim(); // "9/14" を取得
                     const parts = firstDate.split('/');
-                    const datePart = parts[0].padStart(2, '0') + parts[1].padStart(2, '0'); // "0916"
+                    const datePart = parts[0].padStart(2, '0') + parts[1].padStart(2, '0'); // "0914"
                     
                     const regNo = `${prefix}-${datePart}-${nextNum}`;
                     updateData.regNo = regNo;
@@ -230,7 +231,7 @@
 
                 await updateDoc(doc(db, "reservations", id), updateData);
 
-                // schedules側の残席カウント更新
+                // schedules側のカウント更新（リアルタイム残数連動）
                 if(status === 'accepted') {
                     const q = query(collection(db, "schedules"), where("courseName", "==", r.courseName), where("date", "==", r.courseDate));
                     const snap = await getDocs(q);
@@ -241,8 +242,8 @@
                     }
                 }
                 
-                alert(`更新完了！${updateData.regNo ? '\n受付番号：' + updateData.regNo : ''}`);
-                // [修正] ここでの自動メール送信を廃止しました
+                alert(`更新完了！${updateData.regNo ? '\n発行された受付番号：' + updateData.regNo : ''}`);
+                // 確定時はメールを送りません。一覧のボタンから手動で送る運用です。
                 closeModal();
             } catch (e) { alert("エラー: " + e.message); }
         };
