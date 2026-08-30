@@ -56,6 +56,7 @@
                 <thead>
                     <tr>
                         <th onclick="window.sortTable('createdAt')" class="cursor-pointer">受付日時 <i class="fas fa-sort ml-1"></i></th>
+                        <th>No.</th>
                         <th>種別</th>
                         <th onclick="window.sortTable('courseName')" class="cursor-pointer">講習名 / 日程 <i class="fas fa-sort ml-1"></i></th>
                         <th>受講生名</th>
@@ -147,13 +148,14 @@
                 const cleanCourseDate = typeof r.courseDate === 'string' ? r.courseDate.split(',')[0].trim() : r.courseDate;
 
                 let mailBtn = "";
-                if(r.status === 'waiting') mailBtn = `<button class="btn-mail-action !bg-amber-600 !text-white" onclick="window.sendMail('${r.id}', 'waiting')">待機依頼</button>`;
+                if(r.status === 'waiting') mailBtn = `<button class="btn-mail-action !bg-amber-600 !text-white" onclick="window.sendMail('${r.id}', 'waiting')">待機案内</button>`;
                 else if(r.mode === 'full') mailBtn = `<button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'guide')">受講案内</button>`;
-                else mailBtn = `<button class="btn-mail-action !bg-yellow-500 !text-slate-900" onclick="window.sendMail('${r.id}', 'simple')">書類提出依頼</button>`;
+                else mailBtn = `<button class="btn-mail-action !bg-yellow-500 !text-slate-900" onclick="window.sendMail('${r.id}', 'simple')">本申込依頼</button>`;
 
                 return `<tr>
                     <td class="text-white font-bold font-en text-[11px]">${dateStr}</td>
-                    <td><span class="tag-mode ${r.mode === 'full' ? 'mode-full' : 'mode-simple'}">${r.mode === 'full' ? '本申込' : '予約'}</span></td>
+                    <td class="text-sky-400 font-black italic text-[10px]">${r.regNo || '-'}</td>
+                    <td><span class="tag-mode ${r.mode === 'full' ? 'mode-full' : 'mode-simple'}">${r.mode === 'full' ? '本申込' : '仮予約'}</span></td>
                     <td><div class="text-[#00a2ff] font-[900] italic text-sm">${cleanCourseName}</div><div class="text-[10px] text-white opacity-60 font-en font-bold">${cleanCourseDate}</div></td>
                     <td class="font-[900] italic text-white text-lg">${r.status === 'new' ? '<span class="new-dot"></span>' : r.status === 'waiting' ? '<span class="wait-dot"></span>' : ''}${r.userName}</td>
                     <td class="text-slate-300 font-bold text-xs italic">${r.company || '-'}</td>
@@ -169,22 +171,18 @@
             let detailsHtml = "";
             const row = (label, val) => { if(val && val !== "undefined" && val !== "") detailsHtml += `<div class="mb-6 border-b border-white/5 pb-3 text-left"><span class="block text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">${label}</span><p class="text-white font-bold text-lg leading-relaxed">${val}</p></div>`; };
 
+            row("受付番号", r.regNo);
             row("申込種別", r.mode === 'full' ? '本申込' : r.status === 'waiting' ? 'キャンセル待ち' : '仮予約（仮押さえ）');
             row("氏名(フリガナ)", `${r.userName} (${r.userKana || ''})`);
             row("旧姓・通称の併記", r.maidenName);
             row("生年月日", r.birthDate);
             row("現住所", r.address ? `〒${r.zip || ''} ${r.address}` : null);
             row("連絡先", `TEL: ${r.phone} / MAIL: ${r.email}`);
-            row("勤務先", `${r.company || 'なし'} (TEL: ${r.compPhone || '-'}) / 住所: ${r.compAddress || '-'}`);
-            
-            // 免除条件の詳細
+            row("勤務先", `${r.company || 'なし'} (TEL: ${r.compPhone || '-'})`);
             row("免除区分", r.exType);
-            row("資格詳細(A)", r.licKindA ? `${r.licKindA} / 日付: ${r.exDateA} / 番号: ${r.exNoA} / 機関: ${r.exOrgA}` : null);
-            row("資格詳細(B)", r.licKindB ? `${r.licKindB} / 取得日: ${r.exDateB}` : null);
+            row("資格詳細(A)", r.licKindA ? `${r.licKindA} / 日付: ${r.exDateA} / 番号: ${r.exNoA}` : null);
             row("免許証(31H)", r.licNo);
-            
             row("助成金利用", r.subsidy);
-            row("領収書宛名", r.receipt === "必要" ? r.receiptName : "不要");
 
             body.innerHTML = `
                 <div class="space-y-8">
@@ -209,9 +207,8 @@
             try {
                 let updateData = { status: status };
 
-                // --- [自動採番] 受付確定時に番号を発行（例：玉掛-0914-1） ---
+                // --- [改善版] 受付確定時に番号を発行（例：玉掛-0914-1） ---
                 if (status === 'accepted' && !r.regNo) {
-                    // 同じ講習・同じ日程の「既に確定済み」の人を数える
                     const qCount = query(collection(db, "reservations"), 
                         where("courseName", "==", r.courseName), 
                         where("courseDate", "==", r.courseDate),
@@ -219,21 +216,18 @@
                     const countSnap = await getDocs(qCount);
                     const nextNum = countSnap.size + 1;
 
-                    // 講習名の頭2文字
                     const prefix = r.courseName.substring(0, 2); 
-                    // 日付から初日の4桁を抽出 (例: 9/14-9/16 -> 0914)
-                    const dateMatch = r.courseDate.match(/(\d+)\/(\d+)/);
-                    const datePart = dateMatch ? dateMatch[1].padStart(2,'0') + dateMatch[2].padStart(2,'0') : "0000";
+                    // 日付から数字だけを抽出して最初の4桁を使う (9/14-9/16 -> 0914)
+                    const dateDigits = r.courseDate.replace(/\D/g, ''); // 数字以外を消す
+                    const datePart = dateDigits.substring(0, 4).padStart(4, '0');
                     
                     const regNo = `${prefix}-${datePart}-${nextNum}`;
                     updateData.regNo = regNo;
-                    r.regNo = regNo; // メール送信時に利用
+                    r.regNo = regNo; // これでメール送信時も「確認中」になりません
                 }
 
-                // 1. Firestoreの申込データを更新
                 await updateDoc(doc(db, "reservations", id), updateData);
 
-                // 2. schedules側のカウントを自動更新
                 if(status === 'accepted') {
                     const q = query(collection(db, "schedules"), where("courseName", "==", r.courseName), where("date", "==", r.courseDate));
                     const snap = await getDocs(q);
@@ -244,25 +238,18 @@
                     }
                 }
                 
-                alert(`更新完了！${updateData.regNo ? '\n発行された受付番号：' + updateData.regNo : ''}`);
-                
-                // 3. 【連動】そのままEmailJSでプロ仕様メールを送信！
+                alert(`更新完了！${updateData.regNo ? '\n受付番号：' + updateData.regNo : ''}`);
+                // 確定後に自動でメール送信
                 window.sendMail(id, r.mode === 'full' ? 'guide' : 'simple');
-                
                 closeModal();
-            } catch (e) { 
-                console.error(e);
-                alert("エラーが発生しました: " + e.message); 
-            }
+            } catch (e) { alert("エラー: " + e.message); }
         };
 
         window.sendMail = async (id, type) => {
             const r = reservations.find(item => item.id === id);
-            // 押し間違え防止のためボタンの文字を変える
             const btn = event?.target;
             if(btn && btn.tagName === 'BUTTON') btn.innerText = "送信中...";
 
-            // コース名からPDFリンクを自動判別
             let pdfUrl = "https://shimonoseki-tc.com/points.html#flow";
             if (r.courseName.includes("玉掛け")) pdfUrl = "https://shimonoseki-tc.com/pdf/tamakake.pdf";
             else if (r.courseName.includes("クレーン")) pdfUrl = "https://shimonoseki-tc.com/pdf/crane.pdf";
@@ -270,33 +257,23 @@
             else if (r.courseName.includes("テールゲート") || r.courseName.includes("フルハーネス")) pdfUrl = "https://shimonoseki-tc.com/pdf/tail.pdf";
 
             const emailParams = {
-                userName: r.userName,
-                userKana: r.userKana,
-                courseName: r.courseName,
-                courseDate: r.courseDate,
-                email: r.email,
-                phone: r.phone || "確認中",
-                regNo: r.regNo || "（確認中）",
-                pdfUrl: pdfUrl,
+                userName: r.userName, userKana: r.userKana, courseName: r.courseName, courseDate: r.courseDate, email: r.email, phone: r.phone || "確認中",
+                regNo: r.regNo || "（確認中）", pdfUrl: pdfUrl,
                 applyUrl: `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full`,
-                deadline_note: type === 'simple' 
-                    ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込のお手続きをお願いいたします。" 
-                    : "お申し込みの受付が完了いたしました。当日、会場にてお待ちしております。"
+                deadline_note: type === 'simple' ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込をお願いいたします。" : "お申し込みの受付が完了いたしました。当日、会場にてお待ちしております。"
             };
-
             try {
-                // EmailJSで直接送信
+                // EmailJSで実際に送信する命令
                 await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
                 alert("プロ仕様の案内メールを送信しました！");
-                // Firestoreの「メール送信済み」フラグを更新
+                // データベースを「送信済」に更新
                 await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
             } catch (err) {
-                console.error("EmailJS Error:", err);
-                alert("送信に失敗しました。詳細: " + JSON.stringify(err));
+                alert("送信に失敗しました: " + JSON.stringify(err));
             } finally {
-                if(btn && btn.tagName === 'BUTTON') btn.innerText = type === 'simple' ? "書類提出依頼" : "受講案内";
+                if(btn && btn.tagName === 'BUTTON') btn.innerText = type === 'simple' ? "本申込依頼" : "受講案内";
             }
-        };
+        }; // ここで sendMail 関数を閉じます
         window.closeModal = () => document.getElementById('modal-overlay').classList.remove('active');
         window.deleteRes = async (id) => { if(confirm("本当に削除しますか？")) { await deleteDoc(doc(db, "reservations", id)); closeModal(); } };
     </script>
