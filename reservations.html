@@ -224,20 +224,19 @@
         window.sendMail = async (id, type) => {
             const r = reservations.find(item => item.id === id);
             let sub = "", body = "";
+            const signature = "\n\n--------------------------------------------\n下関トレーニングセンター（STC）\n山口県下関市長府安養寺1丁目15-13\nTEL: 083-246-0556 / FAX: 083-246-2835\nHP: https://shimonoseki-tc.com\n--------------------------------------------";
 
             if (type === 'simple') {
-                // 仮予約の人への「書類提出（本申込）依頼」メール
                 sub = `【STC下関】仮予約の確認と本申込のお願い：${r.courseName}`;
-                // 自動で本申込用のURLを生成
                 const applyUrl = `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full`;
-                
-                body = `${r.userName} 様\n\n下関トレーニングセンターです。仮予約を承りました。\n\nお席を確保いたしましたが、現在「仮予約」の状態です。\n以下のリンクより、写真の添付と本申込のお手続きを7日以内にお願いいたします。\n\n▼本申込用URL\n${applyUrl}\n\n※期限を過ぎますとキャンセル待ちの方へ枠を譲る場合がございますのでご注意ください。`;
+                body = `${r.userName} 様\n\n下関トレーニングセンターです。\nこの度は仮予約をいただき、誠にありがとうございます。\n\n現在、お席の「仮押さえ」が完了しております。\n受講を確定させるため、お手数ですが7日以内に以下のURLより\n本申込（顔写真の添付とご入金）のお手続きをお願いいたします。\n\n▼ Webで本申込を行う方はこちら\n${applyUrl}\n\n※期限を過ぎますとお席の確保が難しくなる場合がございます。${signature}`;
             } else if (type === 'waiting') {
-                sub = `【STC下関】キャンセル待ち受付のお知らせ：${r.courseName}`;
-                body = `${r.userName} 様\n\nキャンセル待ちにて受付いたしました。空きが出次第、順次ご連絡差し上げます。`;
+                sub = `【STC下関】キャンセル待ち受付：${r.courseName}`;
+                body = `${r.userName} 様\n\n下関トレーニングセンターです。\nキャンセル待ちにて受付いたしました。\n空きが出次第、事務局よりお電話またはメールにてご連絡差し上げます。${signature}`;
             } else {
-                sub = `【STC下関】受講案内：${r.courseName}`;
-                body = `${r.userName} 様\n\nお申し込みありがとうございました。受付が完了いたしました。\n当日、以下の日程でお待ちしております。\n\n講習名：${r.courseName}\n日程：${r.courseDate}`;
+                sub = `【STC下関】受講のご案内：${r.courseName}`;
+                const regNoText = r.regNo ? `\n受付番号：${r.regNo}` : "";
+                body = `${r.userName} 様\n\nお申し込みありがとうございます。受付が完了いたしました。${regNoText}\n\n講習名：${r.courseName}\n日程：${r.courseDate}\n\n当日、会場にてお待ちしております。お気をつけてお越しください。${signature}`;
             }
 
             window.location.href = `mailto:${r.email}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
