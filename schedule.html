@@ -183,8 +183,9 @@
                 date: document.getElementById('dayDisplay').value,
                 capacity: parseInt(document.getElementById('capacity').value),
                 // 手動入力された数値をFirestoreに送る
-                fullApplied: parseInt(document.getElementById('fullApplied').value) || 0,
-                reserved: parseInt(document.getElementById('reserved').value) || 0,
+                // 修正箇所：window.saveSchedule 関数内
+               fullApplied: Number(document.getElementById('fullApplied').value) || 0,
+               reserved: Number(document.getElementById('reserved').value) || 0,
                 status: 'ok'
             };
             if (editingId) await updateDoc(doc(db, "schedules", editingId), data);
