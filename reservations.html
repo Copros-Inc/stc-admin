@@ -254,12 +254,10 @@
             const btn = event?.target;
             if(btn && btn.tagName === 'BUTTON') btn.innerText = "送信中...";
 
-            // 1. 各種PDFのベースパス
             const baseUrl = "https://shimonoseki-tc.com/pdf/";
             let pdfUrl = ""; 
-            let guideUrl = `${baseUrl}guide_special.pdf`; // デフォルト案内書
+            let guideUrl = `${baseUrl}guide_special.pdf`;
 
-            // 2. 3種の主要講習に絞った振り分け
             const cName = r.courseName || "";
             if (cName.includes("玉掛け")) {
                 pdfUrl = `${baseUrl}tamakake.pdf`;
@@ -271,8 +269,25 @@
                 pdfUrl = `${baseUrl}fork31.pdf`;
                 guideUrl = `${baseUrl}guide_fork31.pdf`;
             } else {
-                // それ以外（テールゲート等）は共通のフロー案内などを設定
                 pdfUrl = "https://shimonoseki-tc.com/points.html#flow";
+            }
+
+            // --- ★ここが重要：仮予約(simple)の時だけHTMLの塊を作る ---
+            let preApplyBlock = "";
+            if (type === 'simple') {
+                preApplyBlock = `
+                    <div style="margin: 20px 0; padding: 15px; border: 2px dashed #00a2ff; border-radius: 10px; text-align: center;">
+                        <p style="font-size: 13px; color: #001a33; font-weight: bold; margin-bottom: 10px;">郵送・FAXで本申込される方（申込書）</p>
+                        <a href="${pdfUrl}" style="color: #00a2ff; font-size: 14px; font-weight: bold; text-decoration: underline;">
+                            ${r.courseName} 申込書(PDF)ダウンロード
+                        </a>
+                        <div style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px;">
+                            <p style="font-size: 13px; color: #666; margin-bottom: 10px;">スマホ・PCで本申込(写真添付)を行う方</p>
+                            <a href="https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full" style="background-color: #001a33; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
+                                Web本申込手続きへ進む
+                            </a>
+                        </div>
+                    </div>`;
             }
 
             const emailParams = {
@@ -283,19 +298,16 @@
                 email: r.email,
                 phone: r.phone || "確認中",
                 regNo: r.regNo || "（未発行）",
-                pdfUrl: type === 'simple' ? pdfUrl : "", 
                 guideUrl: guideUrl,
-                applyUrl: type === 'simple' ? `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full` : "",
-                // ここをより厳密に判定
-                displayPre: type === 'simple' ? 'block' : 'none',
+                preApplyBlock: preApplyBlock, // 空文字ならメールには何も出ない
                 deadline_note: type === 'simple' 
-                    ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込（写真添付・書類提出）をお願いいたします。" 
+                    ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込をお願いいたします。" 
                     : "お申し込みの受付（本申込）が完了いたしました。当日の案内書を必ずご確認ください。"
             };
 
             try {
                 await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
-                alert("案内メールを送信しました！");
+                alert("プロ仕様の案内メールを送信しました！");
                 await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
             } catch (err) {
                 console.error("EmailJS Error:", err);
