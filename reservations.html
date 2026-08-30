@@ -207,28 +207,29 @@
             try {
                 let updateData = { status: status };
 
-                // --- [決定版] 講習・日程ごとに独立した連番を振る（例：玉掛-0914-1） ---
+                // --- [最終改善版] 確定ボタンを押した順に1から連番を振る ---
                 if (status === 'accepted' && !r.regNo) {
-                    // 1. 同一講習・同一日程で、すでに番号を持っている人数を数える
+                    // 同じ講習・同じ日程のデータをすべて取得
                     const qCount = query(collection(db, "reservations"), 
                         where("courseName", "==", r.courseName), 
                         where("courseDate", "==", r.courseDate));
                     const countSnap = await getDocs(qCount);
-                    // すでに regNo（番号）が書き込まれているデータだけをフィルタリングしてカウント
-                    const nextNum = countSnap.docs.filter(doc => doc.data().regNo).length + 1;
+                    
+                    // 【重要】すでに「受付番号（regNo）」が発行されている人だけを正確に数える
+                    const confirmedUsers = countSnap.docs.filter(doc => doc.data().regNo);
+                    const nextNum = confirmedUsers.length + 1;
 
                     const prefix = r.courseName.substring(0, 2); 
                     
                     // 日付フォーマットの修正: "9/14-9/16" -> "0914"
-                    const firstDate = r.courseDate.split('-')[0].trim(); // "9/14" を取得
+                    const firstDate = r.courseDate.split('-')[0].trim();
                     const parts = firstDate.split('/');
-                    const datePart = parts[0].padStart(2, '0') + parts[1].padStart(2, '0'); // "0914"
+                    const datePart = parts[0].padStart(2, '0') + parts[1].padStart(2, '0');
                     
                     const regNo = `${prefix}-${datePart}-${nextNum}`;
                     updateData.regNo = regNo;
                     r.regNo = regNo;
                 }
-
                 await updateDoc(doc(db, "reservations", id), updateData);
 
                 // schedules側のカウント更新（リアルタイム残数連動）
