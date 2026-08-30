@@ -251,9 +251,12 @@
 
         window.sendMail = async (id, type) => {
             const r = reservations.find(item => item.id === id);
-            
+            // 押し間違え防止のためボタンの文字を変える
+            const btn = event?.target;
+            if(btn && btn.tagName === 'BUTTON') btn.innerText = "送信中...";
+
             // コース名からPDFリンクを自動判別
-            let pdfUrl = "https://shimonoseki-tc.com/points.html#flow"; // デフォルト
+            let pdfUrl = "https://shimonoseki-tc.com/points.html#flow";
             if (r.courseName.includes("玉掛け")) pdfUrl = "https://shimonoseki-tc.com/pdf/tamakake.pdf";
             else if (r.courseName.includes("クレーン")) pdfUrl = "https://shimonoseki-tc.com/pdf/crane.pdf";
             else if (r.courseName.includes("31H") || r.courseName.includes("３１Ｈ")) pdfUrl = "https://shimonoseki-tc.com/pdf/fork31.pdf";
@@ -267,46 +270,35 @@
                 email: r.email,
                 phone: r.phone || "確認中",
                 regNo: r.regNo || "（確認中）",
-                pdfUrl: pdfUrl, // ここでPDFリンクを送信
+                pdfUrl: pdfUrl,
                 applyUrl: `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full`,
                 deadline_note: type === 'simple' 
-                    ? "【仮予約】お席を確保しました。7日以内に以下のURLより本申込、または申込書の提出をお願いいたします。" 
+                    ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込のお手続きをお願いいたします。" 
                     : "お申し込みの受付が完了いたしました。当日、会場にてお待ちしております。"
             };
 
             try {
+                // EmailJSで直接送信
                 await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
-                alert("案内メールを送信しました！");
-                await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
-            } catch (err) {
-                alert("送信に失敗しました。詳細: " + JSON.stringify(err));
-            }
-        };
-            try {
-                // EmailJSで送信
-                await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
-                
                 alert("プロ仕様の案内メールを送信しました！");
-                
                 // Firestoreの「メール送信済み」フラグを更新
                 await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
             } catch (err) {
                 console.error("EmailJS Error:", err);
-                alert("EmailJSでの送信に失敗しました。詳細: " + JSON.stringify(err));
+                alert("送信に失敗しました。詳細: " + JSON.stringify(err));
             } finally {
-                if(btn) btn.innerText = type === 'simple' ? "書類提出依頼" : "受講案内";
+                if(btn && btn.tagName === 'BUTTON') btn.innerText = type === 'simple' ? "書類提出依頼" : "受講案内";
             }
         };
-
         window.closeModal = () => document.getElementById('modal-overlay').classList.remove('active');
         window.deleteRes = async (id) => { if(confirm("本当に削除しますか？")) { await deleteDoc(doc(db, "reservations", id)); closeModal(); } };
     </script>
-    
-        <!-- EmailJSのライブラリ読み込み -->
+
+    <!-- EmailJSのライブラリ読み込み -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script type="text/javascript">
         (function() {
-            emailjs.init("9b2XZtU7jPZZPvYFo"); // 下関トレーニングセンターのPublic Key
+            emailjs.init("9b2XZtU7jPZZPvYFo"); // STC専用キー
         })();
     </script>
 </body>
