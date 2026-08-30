@@ -286,7 +286,8 @@
                 pdfUrl: type === 'simple' ? pdfUrl : "", 
                 guideUrl: guideUrl,
                 applyUrl: type === 'simple' ? `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full` : "",
-                displayPre: type === 'simple' ? "block" : "none",
+                // ここをより厳密に判定
+                displayPre: type === 'simple' ? 'block' : 'none',
                 deadline_note: type === 'simple' 
                     ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込（写真添付・書類提出）をお願いいたします。" 
                     : "お申し込みの受付（本申込）が完了いたしました。当日の案内書を必ずご確認ください。"
