@@ -205,9 +205,33 @@
         };
 
         window.processAction = async (id, status, r) => {
-            if(!confirm("ステータスを更新しますか？")) return;
+            if(!confirm(`ステータスを更新しますか？`)) return;
             try {
-                await updateDoc(doc(db, "reservations", id), { status: status });
+                let updateData = { status: status };
+
+                // --- [採用] 受付確定時に自動採番（例：玉掛-0914-1） ---
+                if (status === 'accepted' && !r.regNo) {
+                    // 同じ講習・同じ日程の「確定済み」人数を数える
+                    const qCount = query(collection(db, "reservations"), 
+                        where("courseName", "==", r.courseName), 
+                        where("courseDate", "==", r.courseDate),
+                        where("status", "==", "accepted"));
+                    const countSnap = await getDocs(qCount);
+                    const nextNum = countSnap.size + 1;
+
+                    const prefix = r.courseName.substring(0, 2); 
+                    // 日付から初日の4桁を抽出 (例: 9/14-9/16 -> 0914)
+                    const dateMatch = r.courseDate.match(/(\d+)\/(\d+)/);
+                    const datePart = dateMatch ? dateMatch[1].padStart(2,'0') + dateMatch[2].padStart(2,'0') : "0000";
+                    
+                    const regNo = `${prefix}-${datePart}-${nextNum}`;
+                    updateData.regNo = regNo;
+                    r.regNo = regNo; // メール送信時に利用
+                }
+
+                await updateDoc(doc(db, "reservations", id), updateData);
+
+                // schedules側のカウント更新（既存）
                 if(status === 'accepted') {
                     const q = query(collection(db, "schedules"), where("courseName", "==", r.courseName), where("date", "==", r.courseDate));
                     const snap = await getDocs(q);
@@ -217,34 +241,73 @@
                         await updateDoc(doc(db, "schedules", sched.id), { [field]: (sched.data()[field] || 0) + 1 });
                     }
                 }
-                alert("更新完了しました"); closeModal();
+                
+                alert(`更新完了！${updateData.regNo ? '\n受付番号：' + updateData.regNo : ''}`);
+                // そのままメール送信を自動実行
+                window.sendMail(id, r.mode === 'full' ? 'guide' : 'simple');
+                closeModal();
             } catch (e) { alert("エラー: " + e.message); }
         };
 
         window.sendMail = async (id, type) => {
             const r = reservations.find(item => item.id === id);
-            let sub = "", body = "";
-            const signature = "\n\n--------------------------------------------\n下関トレーニングセンター（STC）\n山口県下関市長府安養寺1丁目15-13\nTEL: 083-246-0556 / FAX: 083-246-2835\nHP: https://shimonoseki-tc.com\n--------------------------------------------";
+            
+            // コース名からPDFリンクを自動判別
+            let pdfUrl = "https://shimonoseki-tc.com/points.html#flow"; // デフォルト
+            if (r.courseName.includes("玉掛け")) pdfUrl = "https://shimonoseki-tc.com/pdf/tamakake.pdf";
+            else if (r.courseName.includes("クレーン")) pdfUrl = "https://shimonoseki-tc.com/pdf/crane.pdf";
+            else if (r.courseName.includes("31H") || r.courseName.includes("３１Ｈ")) pdfUrl = "https://shimonoseki-tc.com/pdf/fork31.pdf";
+            else if (r.courseName.includes("テールゲート") || r.courseName.includes("フルハーネス")) pdfUrl = "https://shimonoseki-tc.com/pdf/tail.pdf";
 
-            if (type === 'simple') {
-                sub = `【STC下関】仮予約の確認と本申込のお願い：${r.courseName}`;
-                const applyUrl = `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full`;
-                body = `${r.userName} 様\n\n下関トレーニングセンターです。\nこの度は仮予約をいただき、誠にありがとうございます。\n\n現在、お席の「仮押さえ」が完了しております。\n受講を確定させるため、お手数ですが7日以内に以下のURLより\n本申込（顔写真の添付とご入金）のお手続きをお願いいたします。\n\n▼ Webで本申込を行う方はこちら\n${applyUrl}\n\n※期限を過ぎますとお席の確保が難しくなる場合がございます。${signature}`;
-            } else if (type === 'waiting') {
-                sub = `【STC下関】キャンセル待ち受付：${r.courseName}`;
-                body = `${r.userName} 様\n\n下関トレーニングセンターです。\nキャンセル待ちにて受付いたしました。\n空きが出次第、事務局よりお電話またはメールにてご連絡差し上げます。${signature}`;
-            } else {
-                sub = `【STC下関】受講のご案内：${r.courseName}`;
-                const regNoText = r.regNo ? `\n受付番号：${r.regNo}` : "";
-                body = `${r.userName} 様\n\nお申し込みありがとうございます。受付が完了いたしました。${regNoText}\n\n講習名：${r.courseName}\n日程：${r.courseDate}\n\n当日、会場にてお待ちしております。お気をつけてお越しください。${signature}`;
+            const emailParams = {
+                userName: r.userName,
+                userKana: r.userKana,
+                courseName: r.courseName,
+                courseDate: r.courseDate,
+                email: r.email,
+                phone: r.phone || "確認中",
+                regNo: r.regNo || "（確認中）",
+                pdfUrl: pdfUrl, // ここでPDFリンクを送信
+                applyUrl: `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full`,
+                deadline_note: type === 'simple' 
+                    ? "【仮予約】お席を確保しました。7日以内に以下のURLより本申込、または申込書の提出をお願いいたします。" 
+                    : "お申し込みの受付が完了いたしました。当日、会場にてお待ちしております。"
+            };
+
+            try {
+                await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
+                alert("案内メールを送信しました！");
+                await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
+            } catch (err) {
+                alert("送信に失敗しました。詳細: " + JSON.stringify(err));
             }
-
-            window.location.href = `mailto:${r.email}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
-            await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
+        };
+            try {
+                // EmailJSで送信
+                await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
+                
+                alert("プロ仕様の案内メールを送信しました！");
+                
+                // Firestoreの「メール送信済み」フラグを更新
+                await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
+            } catch (err) {
+                console.error("EmailJS Error:", err);
+                alert("EmailJSでの送信に失敗しました。詳細: " + JSON.stringify(err));
+            } finally {
+                if(btn) btn.innerText = type === 'simple' ? "書類提出依頼" : "受講案内";
+            }
         };
 
         window.closeModal = () => document.getElementById('modal-overlay').classList.remove('active');
         window.deleteRes = async (id) => { if(confirm("本当に削除しますか？")) { await deleteDoc(doc(db, "reservations", id)); closeModal(); } };
+    </script>
+    
+        <!-- EmailJSのライブラリ読み込み -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("9b2XZtU7jPZZPvYFo"); // 下関トレーニングセンターのPublic Key
+        })();
     </script>
 </body>
 </html>
