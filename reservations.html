@@ -209,9 +209,9 @@
             try {
                 let updateData = { status: status };
 
-                // --- [採用] 受付確定時に自動採番（例：玉掛-0914-1） ---
+                // --- [自動採番] 受付確定時に番号を発行（例：玉掛-0914-1） ---
                 if (status === 'accepted' && !r.regNo) {
-                    // 同じ講習・同じ日程の「確定済み」人数を数える
+                    // 同じ講習・同じ日程の「既に確定済み」の人を数える
                     const qCount = query(collection(db, "reservations"), 
                         where("courseName", "==", r.courseName), 
                         where("courseDate", "==", r.courseDate),
@@ -219,6 +219,7 @@
                     const countSnap = await getDocs(qCount);
                     const nextNum = countSnap.size + 1;
 
+                    // 講習名の頭2文字
                     const prefix = r.courseName.substring(0, 2); 
                     // 日付から初日の4桁を抽出 (例: 9/14-9/16 -> 0914)
                     const dateMatch = r.courseDate.match(/(\d+)\/(\d+)/);
@@ -229,9 +230,10 @@
                     r.regNo = regNo; // メール送信時に利用
                 }
 
+                // 1. Firestoreの申込データを更新
                 await updateDoc(doc(db, "reservations", id), updateData);
 
-                // schedules側のカウント更新（既存）
+                // 2. schedules側のカウントを自動更新
                 if(status === 'accepted') {
                     const q = query(collection(db, "schedules"), where("courseName", "==", r.courseName), where("date", "==", r.courseDate));
                     const snap = await getDocs(q);
@@ -242,11 +244,16 @@
                     }
                 }
                 
-                alert(`更新完了！${updateData.regNo ? '\n受付番号：' + updateData.regNo : ''}`);
-                // そのままメール送信を自動実行
+                alert(`更新完了！${updateData.regNo ? '\n発行された受付番号：' + updateData.regNo : ''}`);
+                
+                // 3. 【連動】そのままEmailJSでプロ仕様メールを送信！
                 window.sendMail(id, r.mode === 'full' ? 'guide' : 'simple');
+                
                 closeModal();
-            } catch (e) { alert("エラー: " + e.message); }
+            } catch (e) { 
+                console.error(e);
+                alert("エラーが発生しました: " + e.message); 
+            }
         };
 
         window.sendMail = async (id, type) => {
