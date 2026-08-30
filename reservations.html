@@ -254,30 +254,58 @@
             const btn = event?.target;
             if(btn && btn.tagName === 'BUTTON') btn.innerText = "送信中...";
 
-            let pdfUrl = "https://shimonoseki-tc.com/points.html#flow";
-            if (r.courseName.includes("玉掛け")) pdfUrl = "https://shimonoseki-tc.com/pdf/tamakake.pdf";
-            else if (r.courseName.includes("クレーン")) pdfUrl = "https://shimonoseki-tc.com/pdf/crane.pdf";
-            else if (r.courseName.includes("31H") || r.courseName.includes("３１Ｈ")) pdfUrl = "https://shimonoseki-tc.com/pdf/fork31.pdf";
-            else if (r.courseName.includes("テールゲート") || r.courseName.includes("フルハーネス")) pdfUrl = "https://shimonoseki-tc.com/pdf/tail.pdf";
+            // 1. 各種PDFのベースパス
+            const baseUrl = "https://shimonoseki-tc.com/pdf/";
+            let pdfUrl = ""; 
+            let guideUrl = `${baseUrl}guide_special.pdf`; // デフォルト案内書
+
+            // 2. 3種の主要講習に絞った振り分け
+            const cName = r.courseName || "";
+            if (cName.includes("玉掛け")) {
+                pdfUrl = `${baseUrl}tamakake.pdf`;
+                guideUrl = `${baseUrl}guide_tamakake.pdf`;
+            } else if (cName.includes("クレーン")) {
+                pdfUrl = `${baseUrl}crane.pdf`;
+                guideUrl = `${baseUrl}guide_crane.pdf`;
+            } else if (cName.includes("31H") || cName.includes("３１Ｈ")) {
+                pdfUrl = `${baseUrl}fork31.pdf`;
+                guideUrl = `${baseUrl}guide_fork31.pdf`;
+            } else {
+                // それ以外（テールゲート等）は共通のフロー案内などを設定
+                pdfUrl = "https://shimonoseki-tc.com/points.html#flow";
+            }
 
             const emailParams = {
-                userName: r.userName, userKana: r.userKana, courseName: r.courseName, courseDate: r.courseDate, email: r.email, phone: r.phone || "確認中",
-                regNo: r.regNo || "（確認中）", pdfUrl: pdfUrl,
-                applyUrl: `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full`,
-                deadline_note: type === 'simple' ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込をお願いいたします。" : "お申し込みの受付が完了いたしました。当日、会場にてお待ちしております。"
+                userName: r.userName,
+                userKana: r.userKana,
+                courseName: r.courseName,
+                courseDate: r.courseDate,
+                email: r.email,
+                phone: r.phone || "確認中",
+                regNo: r.regNo || "（未発行）",
+                pdfUrl: type === 'simple' ? pdfUrl : "", 
+                guideUrl: guideUrl,
+                applyUrl: type === 'simple' ? `https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full` : "",
+                displayPre: type === 'simple' ? "block" : "none",
+                deadline_note: type === 'simple' 
+                    ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込（写真添付・書類提出）をお願いいたします。" 
+                    : "お申し込みの受付（本申込）が完了いたしました。当日の案内書を必ずご確認ください。"
             };
+
             try {
-                // EmailJSで実際に送信する命令
                 await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
-                alert("プロ仕様の案内メールを送信しました！");
-                // データベースを「送信済」に更新
+                alert("案内メールを送信しました！");
                 await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
             } catch (err) {
-                alert("送信に失敗しました: " + JSON.stringify(err));
+                console.error("EmailJS Error:", err);
+                alert("送信失敗: " + err.text);
             } finally {
-                if(btn && btn.tagName === 'BUTTON') btn.innerText = type === 'simple' ? "本申込依頼" : "受講案内";
+                if(btn && btn.tagName === 'BUTTON') {
+                    btn.innerText = type === 'simple' ? "本申込依頼" : type === 'waiting' ? "待機案内" : "受講案内";
+                }
             }
-        }; // ここで sendMail 関数を閉じます
+        };
+        
         window.closeModal = () => document.getElementById('modal-overlay').classList.remove('active');
         window.deleteRes = async (id) => { if(confirm("本当に削除しますか？")) { await deleteDoc(doc(db, "reservations", id)); closeModal(); } };
     </script>
