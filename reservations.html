@@ -168,32 +168,41 @@
         window.openDetail = (id) => {
             const r = reservations.find(item => item.id === id);
             const body = document.getElementById('modal-body');
-            let detailsHtml = "";
-            const row = (label, val) => { if(val && val !== "undefined" && val !== "") detailsHtml += `<div class="mb-6 border-b border-white/5 pb-3 text-left"><span class="block text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">${label}</span><p class="text-white font-bold text-lg leading-relaxed">${val}</p></div>`; };
-
-            row("受付番号", r.regNo);
-            row("申込種別", r.mode === 'full' ? '本申込' : r.status === 'waiting' ? 'キャンセル待ち' : '仮予約（仮押さえ）');
-            row("氏名(フリガナ)", `${r.userName} (${r.userKana || ''})`);
-            row("旧姓・通称の併記", r.maidenName);
-            row("生年月日", r.birthDate);
-            row("現住所", r.address ? `〒${r.zip || ''} ${r.address}` : null);
-            row("連絡先", `TEL: ${r.phone} / MAIL: ${r.email}`);
-            row("勤務先", `${r.company || 'なし'} (TEL: ${r.compPhone || '-'})`);
-            row("免除区分", r.exType);
-            row("資格詳細(A)", r.licKindA ? `${r.licKindA} / 日付: ${r.exDateA} / 番号: ${r.exNoA}` : null);
-            row("免許証(31H)", r.licNo);
-            row("助成金利用", r.subsidy);
+            
+            // 編集用入力欄の生成
+            const editRow = (label, field, val) => `
+                <div class="mb-6 border-b border-white/5 pb-3 text-left">
+                    <span class="block text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">${label}</span>
+                    <input type="text" id="edit-${field}" value="${val || ''}" class="bg-transparent text-white font-bold text-lg w-full outline-none focus:text-sky-300">
+                </div>`;
 
             body.innerHTML = `
                 <div class="space-y-8">
+                    <div class="flex flex-wrap gap-3 w-full mb-6">
+                        <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-4 py-3 rounded-xl font-black text-[10px] transition">
+                            ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
+                        </button>
+                        <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="flex-1 bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-4 py-3 rounded-xl font-black text-[10px] transition">
+                            ${r.docStatus === 'complete' ? '📄 書類完了' : '📝 書類未済'}
+                        </button>
+                    </div>
                     <div class="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 text-center">
-                        <span class="block text-[10px] font-black text-sky-400 uppercase mb-4 tracking-widest italic">Profile Photo</span>
-                        ${r.photos?.user ? `<img src="${r.photos.user}" class="w-full rounded-2xl border-2 border-white/10 shadow-2xl">` : '<p class="text-slate-600 italic py-10">なし</p>'}
+                        ${r.photos?.user ? `<img src="${r.photos.user}" class="w-full rounded-2xl">` : '<p class="text-slate-600 italic py-10">写真なし</p>'}
                     </div>
                 </div>
                 <div class="md:col-span-2 bg-white/5 p-10 rounded-[3rem] border border-white/10 shadow-inner">
-                    <h3 class="text-sky-500 font-black italic text-sm mb-10 border-b border-sky-500/20 pb-4 uppercase tracking-[0.2em] flex items-center"><i class="fas fa-id-card mr-3"></i> Application Details</h3>
-                    <div class="grid md:grid-cols-2 gap-x-12">${detailsHtml}</div>
+                    <h3 class="text-sky-500 font-black italic text-sm mb-10 border-b border-sky-500/20 pb-4 uppercase flex items-center"><i class="fas fa-edit mr-3"></i> Edit Details</h3>
+                    <div class="grid md:grid-cols-2 gap-x-12">
+                        ${editRow("氏名", "userName", r.userName)}
+                        ${editRow("フリガナ", "userKana", r.userKana)}
+                        ${editRow("電話", "phone", r.phone)}
+                        ${editRow("現住所", "address", r.address)}
+                        ${editRow("会社名", "company", r.company)}
+                        ${editRow("メール", "email", r.email)}
+                    </div>
+                    <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-6 bg-sky-600 text-white py-4 rounded-xl font-black italic uppercase transition hover:bg-sky-500 shadow-lg shadow-sky-600/20">
+                        変更を保存する (SAVE CHANGES)
+                    </button>
                 </div>`;
             
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
@@ -207,24 +216,31 @@
             try {
                 let updateData = { status: status };
 
-                // --- [最終改善版] 確定ボタンを押した順に1から連番を振る ---
+                // --- [修正版] 採番ロジックの安全化 ---
                 if (status === 'accepted' && !r.regNo) {
-                    // 同じ講習・同じ日程のデータをすべて取得
                     const qCount = query(collection(db, "reservations"), 
                         where("courseName", "==", r.courseName), 
                         where("courseDate", "==", r.courseDate));
                     const countSnap = await getDocs(qCount);
-                    
-                    // 【重要】すでに「受付番号（regNo）」が発行されている人だけを正確に数える
                     const confirmedUsers = countSnap.docs.filter(doc => doc.data().regNo);
                     const nextNum = confirmedUsers.length + 1;
 
-                    const prefix = r.courseName.substring(0, 2); 
+                    const prefix = (r.courseName || "講習").substring(0, 2); 
                     
-                    // 日付フォーマットの修正: "9/14-9/16" -> "0914"
-                    const firstDate = r.courseDate.split('-')[0].trim();
-                    const parts = firstDate.split('/');
-                    const datePart = parts[0].padStart(2, '0') + parts[1].padStart(2, '0');
+                    let datePart = "0000";
+                    // 安全に日付を抽出する処理
+                    try {
+                        if (r.courseDate && typeof r.courseDate === 'string' && r.courseDate.includes('/')) {
+                            const firstDate = r.courseDate.split('-')[0].trim();
+                            const parts = firstDate.split('/');
+                            if (parts.length >= 2) {
+                                // 月と日をそれぞれ2桁で固定
+                                const m = parts[0].replace(/[^0-9]/g, '').padStart(2, '0');
+                                const d = parts[1].replace(/[^0-9]/g, '').padStart(2, '0');
+                                datePart = m + d;
+                            }
+                        }
+                    } catch (e) { console.error("Date parse error", e); }
                     
                     const regNo = `${prefix}-${datePart}-${nextNum}`;
                     updateData.regNo = regNo;
