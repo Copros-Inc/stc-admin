@@ -295,7 +295,19 @@
 
             let preApplyBlock = "";
             if (type === 'simple') {
-                preApplyBlock = `<div style="margin:20px 0;padding:15px;border:2px dashed #00a2ff;border-radius:10px;text-align:center;"><p style="font-size:13px;color:#001a33;font-weight:bold;margin-bottom:10px;">郵送・FAXで本申込される方(申込書)</p><a href="${pdfUrl}" style="color:#00a2ff;font-size:14px;font-weight:bold;text-decoration:underline;">${r.courseName} 申込書(PDF)</a><div style="margin-top:25px;border-top:1px solid #eee;padding-top:15px;"><p style="font-size:13px;color:#666;margin-bottom:10px;">スマホ・PCで本申込を行う方</p><a href="https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full&tempId=${r.id}" style="background-color:#001a33;color:#ffffff;padding:12px 25px;text-decoration:none;border-radius:50px;font-weight:bold;display:inline-block;">Web本申込手続きへ進む</a></div></div>`;
+                preApplyBlock = `
+                    <div style="margin:20px 0;padding:15px;border:2px dashed #00a2ff;border-radius:10px;text-align:center;">
+                        <p style="font-size:13px;color:#001a33;font-weight:bold;margin-bottom:10px;">郵送・FAXで本申込される方(申込書)</p>
+                        <a href="${pdfUrl}" style="color:#00a2ff;font-size:14px;font-weight:bold;text-decoration:underline;">
+                            ${r.courseName} 申込書(PDF)ダウンロード
+                        </a>
+                        <div style="margin-top:25px;border-top:1px solid #eee;padding-top:15px;">
+                            <p style="font-size:13px;color:#666;margin-bottom:10px;">スマホ・PCで本申込を行う方</p>
+                            <a href="https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&regNo=${encodeURIComponent(r.regNo || '')}&mode=full" style="background-color: #001a33; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
+                                Web本申込手続きへ進む
+                            </a>
+                        </div>
+                    </div>`;
             }
 
             const emailParams = {
@@ -322,6 +334,33 @@
         
         window.closeModal = () => document.getElementById('modal-overlay').classList.remove('active');
         window.deleteRes = async (id) => { if(confirm("本当に削除しますか？")) { await deleteDoc(doc(db, "reservations", id)); closeModal(); } };
+ 
+        window.toggleStatus = async (id, field, currentVal) => {
+            const newVal = (currentVal === 'paid' || currentVal === 'complete') ? '' : (field === 'paymentStatus' ? 'paid' : 'complete');
+            try {
+                await updateDoc(doc(db, "reservations", id), { [field]: newVal });
+                alert("ステータスを更新しました");
+                // 一覧を最新にするため、一度詳細を閉じる運用が安全です
+                window.closeModal();
+            } catch (e) { alert("更新失敗: " + e.message); }
+        };
+
+        window.saveReservationEdit = async (id) => {
+            const updatedData = {
+                userName: document.getElementById('edit-userName').value,
+                userKana: document.getElementById('edit-userKana').value,
+                phone: document.getElementById('edit-phone').value,
+                address: document.getElementById('edit-address').value,
+                company: document.getElementById('edit-company').value,
+                email: document.getElementById('edit-email').value,
+            };
+            if(!confirm("内容を保存しますか？")) return;
+            try {
+                await updateDoc(doc(db, "reservations", id), updatedData);
+                alert("保存完了しました");
+                window.closeModal();
+            } catch (e) { alert("保存失敗: " + e.message); }
+        };    
     </script>
 
     <!-- EmailJSのライブラリ読み込み -->
