@@ -257,7 +257,6 @@
             const baseUrl = "https://shimonoseki-tc.com/pdf/";
             let pdfUrl = ""; 
             let guideUrl = `${baseUrl}guide_special.pdf`;
-
             const cName = r.courseName || "";
             if (cName.includes("玉掛け")) {
                 pdfUrl = `${baseUrl}tamakake.pdf`;
@@ -272,50 +271,36 @@
                 pdfUrl = "https://shimonoseki-tc.com/points.html#flow";
             }
 
-            // --- ★ここが重要：仮予約(simple)の時だけHTMLの塊を作る ---
+            // --- 出し分けロジックの適用 ---
+            let guideBlock = "";
+            if (type === 'guide') {
+                guideBlock = `<div style="margin:20px 0;padding:20px;background-color:#fff7ed;border:1px solid #fb923c;border-radius:10px;text-align:center;"><a href="${guideUrl}" style="background-color:#fb923c;color:#ffffff;padding:12px 25px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;font-size:14px;">受講案内と会場案内(PDF)を確認する</a></div>`;
+            }
+
             let preApplyBlock = "";
             if (type === 'simple') {
-                preApplyBlock = `
-                    <div style="margin: 20px 0; padding: 15px; border: 2px dashed #00a2ff; border-radius: 10px; text-align: center;">
-                        <p style="font-size: 13px; color: #001a33; font-weight: bold; margin-bottom: 10px;">郵送・FAXで本申込される方（申込書）</p>
-                        <a href="${pdfUrl}" style="color: #00a2ff; font-size: 14px; font-weight: bold; text-decoration: underline;">
-                            ${r.courseName} 申込書(PDF)ダウンロード
-                        </a>
-                        <div style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px;">
-                            <p style="font-size: 13px; color: #666; margin-bottom: 10px;">スマホ・PCで本申込(写真添付)を行う方</p>
-                            <a href="https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full" style="background-color: #001a33; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                                Web本申込手続きへ進む
-                            </a>
-                        </div>
-                    </div>`;
+                preApplyBlock = `<div style="margin:20px 0;padding:15px;border:2px dashed #00a2ff;border-radius:10px;text-align:center;"><p style="font-size:13px;color:#001a33;font-weight:bold;margin-bottom:10px;">郵送・FAXで本申込される方(申込書)</p><a href="${pdfUrl}" style="color:#00a2ff;font-size:14px;font-weight:bold;text-decoration:underline;">${r.courseName} 申込書(PDF)</a><div style="margin-top:25px;border-top:1px solid #eee;padding-top:15px;"><p style="font-size:13px;color:#666;margin-bottom:10px;">スマホ・PCで本申込を行う方</p><a href="https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&mode=full&tempId=${r.id}" style="background-color:#001a33;color:#ffffff;padding:12px 25px;text-decoration:none;border-radius:50px;font-weight:bold;display:inline-block;">Web本申込手続きへ進む</a></div></div>`;
             }
 
             const emailParams = {
                 userName: r.userName,
-                userKana: r.userKana,
+                userKana: r.userKana || "",
                 courseName: r.courseName,
                 courseDate: r.courseDate,
                 email: r.email,
                 phone: r.phone || "確認中",
                 regNo: r.regNo || "（未発行）",
-                guideUrl: guideUrl,
-                preApplyBlock: preApplyBlock, // 空文字ならメールには何も出ない
-                deadline_note: type === 'simple' 
-                    ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込をお願いいたします。" 
-                    : "お申し込みの受付（本申込）が完了いたしました。当日の案内書を必ずご確認ください。"
+                guideBlock: guideBlock,
+                preApplyBlock: preApplyBlock,
+                deadline_note: type === 'simple' ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込をお願いいたします。" : "お申し込みの受付（本申込）が完了いたしました。"
             };
-
+            
             try {
                 await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
                 alert("プロ仕様の案内メールを送信しました！");
                 await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
-            } catch (err) {
-                console.error("EmailJS Error:", err);
-                alert("送信失敗: " + err.text);
-            } finally {
-                if(btn && btn.tagName === 'BUTTON') {
-                    btn.innerText = type === 'simple' ? "本申込依頼" : type === 'waiting' ? "待機案内" : "受講案内";
-                }
+            } catch (err) { alert("送信失敗: " + err.text); } finally {
+                if(btn && btn.tagName === 'BUTTON') btn.innerText = type === 'simple' ? "本申込依頼" : type === 'waiting' ? "待機案内" : "受講案内";
             }
         };
         
