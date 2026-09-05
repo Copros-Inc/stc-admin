@@ -249,13 +249,19 @@
                 await updateDoc(doc(db, "reservations", id), updateData);
 
                 // schedules側のカウント更新（リアルタイム残数連動）
+                       // schedules側のカウント更新（ウェブ申込以外の手動時のみ実行）
                 if(status === 'accepted') {
-                    const q = query(collection(db, "schedules"), where("courseName", "==", r.courseName), where("date", "==", r.courseDate));
-                    const snap = await getDocs(q);
-                    if(!snap.empty) {
-                        const sched = snap.docs[0];
-                        const field = r.mode === 'full' ? 'fullApplied' : 'reserved';
-                        await updateDoc(doc(db, "schedules", sched.id), { [field]: (sched.data()[field] || 0) + 1 });
+                    // メモ欄にウェブ申込の痕跡がない場合のみ、席数をマイナスする
+                    const isWebApply = r.memo && (r.memo.includes("新規申込") || r.memo.includes("移行"));
+                    
+                    if (!isWebApply) {
+                        const q = query(collection(db, "schedules"), where("courseName", "==", r.courseName), where("date", "==", r.courseDate));
+                        const snap = await getDocs(q);
+                        if(!snap.empty) {
+                            const sched = snap.docs[0];
+                            const field = r.mode === 'full' ? 'fullApplied' : 'reserved';
+                            await updateDoc(doc(db, "schedules", sched.id), { [field]: (sched.data()[field] || 0) + 1 });
+                        }
                     }
                 }
                 
@@ -320,12 +326,14 @@
                 regNo: r.regNo || "（未発行）",
                 guideBlock: guideBlock,
                 preApplyBlock: preApplyBlock,
-                deadline_note: type === 'simple' ? "【重要】現在「仮予約」の状態です。7日以内に以下のURLより本申込をお願いいたします。" : "お申し込みの受付（本申込）が完了いたしました。"
+                deadline_note: type === 'simple' 
+                    ? "【本申込のお願い】仮予約ありがとうございます。内容を確認いたしました。7日以内に以下のボタンより本申込のお手続きをお願いいたします。" 
+                    : "【本申込・完了】お申し込み内容およびお写真を正しく受領いたしました。本申込の手続きが全て完了しましたことを通知いたします。"
             };
             
             try {
                 await emailjs.send("service_ry0ghki", "template_1g454mr", emailParams);
-                alert("プロ仕様の案内メールを送信しました！");
+                alert("案内メールを送信しました！");
                 await updateDoc(doc(db, "reservations", id), { mailStatus: 'sent' });
             } catch (err) { alert("送信失敗: " + err.text); } finally {
                 if(btn && btn.tagName === 'BUTTON') btn.innerText = type === 'simple' ? "本申込依頼" : type === 'waiting' ? "待機案内" : "受講案内";
