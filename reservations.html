@@ -80,6 +80,7 @@
             <div id="modal-body" class="grid md:grid-cols-3 gap-12 text-left"></div>
             <div class="mt-12 flex flex-wrap gap-6 pt-10 border-t border-white/5">
                 <button id="btn-accept-final" class="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-5 rounded-2xl font-[900] italic shadow-lg transition text-lg">受付を確定する</button>
+                <button id="btn-print-preview" onclick="window.printReservation('${r.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-5 rounded-2xl font-[900] italic shadow-lg transition text-lg"><i class="fas fa-print mr-2"></i> 申込書印刷</button> 
                 <button id="btn-wait-final" class="bg-amber-600 hover:bg-amber-500 text-white px-10 py-5 rounded-2xl font-[900] italic shadow-lg transition text-lg">キャンセル待ち登録</button>
                 <button onclick="closeModal()" class="bg-slate-700 text-white px-10 py-5 rounded-2xl font-[900] italic text-lg">閉じる</button>
                 <button id="btn-delete-final" class="bg-red-900/50 text-red-400 px-8 py-5 rounded-2xl font-[900] italic text-sm ml-auto">削除</button>
@@ -193,6 +194,7 @@
                 <div class="md:col-span-2 bg-white/5 p-10 rounded-[3rem] border border-white/10 shadow-inner">
                     <h3 class="text-sky-500 font-black italic text-sm mb-10 border-b border-sky-500/20 pb-4 uppercase flex items-center"><i class="fas fa-edit mr-3"></i> Edit Details</h3>
                     <div class="grid md:grid-cols-2 gap-x-12">
+                    　　${editRow("受付番号 (No.)", "regNo", r.regNo)}
                         ${editRow("氏名", "userName", r.userName)}
                         ${editRow("フリガナ", "userKana", r.userKana)}
                         ${editRow("電話", "phone", r.phone)}
@@ -355,6 +357,7 @@
 
         window.saveReservationEdit = async (id) => {
             const updatedData = {
+                regNo: document.getElementById('edit-regNo').value,
                 userName: document.getElementById('edit-userName').value,
                 userKana: document.getElementById('edit-userKana').value,
                 phone: document.getElementById('edit-phone').value,
@@ -368,7 +371,13 @@
                 alert("保存完了しました");
                 window.closeModal();
             } catch (e) { alert("保存失敗: " + e.message); }
-        };    
+        };  
+
+        window.printReservation = (id) => {
+    const r = reservations.find(item => item.id === id);
+    alert(`申込書プレビュー生成: ${r.userName} 様\n(印刷用レイアウトは次ステップで実装します)`);
+    // ここに印刷用ウィンドを表示するロジックを実装予定
+};
     </script>
 
     <!-- EmailJSのライブラリ読み込み -->
