@@ -454,7 +454,7 @@
                         <tr>
                             <td rowspan="2" style="width: 15mm; background: #eee; text-align: center; font-weight: bold; border: 1px solid #000;">氏名</td>
                             <td colspan="2" style="height: 15mm; border: 1px solid #000; padding: 5px;">
-                                <span style="font-size: 7pt;">フリガナ：${r.userKana}</span><br>
+                                <span style="font-size: 7pt;">フリガナ：${r.userKana || ''}</span><br>
                                 <span style="font-size: 16pt; font-weight: bold; margin-left: 5mm;">${r.userName}</span>
                             </td>
                             <td style="width: 50mm; border: 1px solid #000; font-size: 7pt; padding: 5px;">
@@ -468,7 +468,7 @@
                         </tr>
                         <tr>
                             <td style="background: #eee; text-align: center; font-weight: bold; border: 1px solid #000;">住所</td>
-                            <td colspan="3" style="height: 18mm; border: 1px solid #000; padding: 5px;">〒 ${r.zip || ''}<br>${r.address}<br>電話：${r.phone}</td>
+                            <td colspan="3" style="height: 18mm; border: 1px solid #000; padding: 5px;">〒 ${r.zip || ''}<br>${r.address || ''}<br>電話：${r.phone || ''}</td>
                         </tr>
                         <tr>
                             <td style="background: #eee; text-align: center; font-weight: bold; border: 1px solid #000;">勤務先</td>
@@ -498,12 +498,32 @@
                     </table>
                 </div>`;
         };
-        </body>
-        </html>
-    `;
-    printWindow.document.write(html);
-    printWindow.document.close();
-};
+
+        window.printReservation = (id) => {
+            const r = reservations.find(item => item.id === id);
+            const printWindow = window.open('', '_blank');
+            const content = window.generatePrintHTML(r);
+            const html = `
+                <html>
+                <head>
+                    <title>受講申込書_${r.userName}</title>
+                    <style>
+                        @page { size: A4; margin: 0; }
+                        body { margin: 0; padding: 10mm; background: #fff; }
+                        @media print { .no-print { display: none; } }
+                    </style>
+                </head>
+                <body onload="window.print()">
+                    <div class="no-print" style="background:#f8f9fa; padding:10px; text-align:right; border-bottom:1px solid #ddd;">
+                        <button onclick="window.print()" style="padding:5px 15px; cursor:pointer;">印刷を実行する</button>
+                    </div>
+                    ${content}
+                </body>
+                </html>
+            `;
+            printWindow.document.write(html);
+            printWindow.document.close();
+        };
     </script>
 
     <!-- EmailJSのライブラリ読み込み -->
