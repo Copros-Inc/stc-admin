@@ -167,12 +167,19 @@
                 else if(r.mode === 'full') mailBtn = `<button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'guide')">受講案内</button>`;
                 else mailBtn = `<button class="btn-mail-action !bg-yellow-500 !text-slate-900" onclick="window.sendMail('${r.id}', 'simple')">本申込依頼</button>`;
 
+                let modeTag = "";
+                if (r.status === 'waiting') {
+                    modeTag = `<span class="tag-mode mode-simple" style="background:rgba(239,68,68,0.2); color:#ef4444; border-color:rgba(239,68,68,0.3);">キャンセル待ち</span>`;
+                } else {
+                    modeTag = `<span class="tag-mode ${r.mode === 'full' ? 'mode-full' : 'mode-simple'}">${r.mode === 'full' ? '本申込' : '仮予約'}</span>`;
+                }
+
                 return `<tr>
                     <td class="text-white font-bold font-en text-[11px]">${dateStr}</td>
                     <td class="text-sky-400 font-black italic text-[10px]">${r.regNo || '-'}</td>
-                    <td><span class="tag-mode ${r.mode === 'full' ? 'mode-full' : 'mode-simple'}">${r.mode === 'full' ? '本申込' : '仮予約'}</span></td>
+                    <td>${modeTag}</td>
                     <td><div class="text-[#00a2ff] font-[900] italic text-sm">${cleanCourseName}</div><div class="text-[10px] text-white opacity-60 font-en font-bold">${cleanCourseDate}</div></td>
-                    <td class="font-[900] italic text-white text-lg">${r.status === 'new' ? '<span class="new-dot"></span>' : r.status === 'waiting' ? '<span class="wait-dot"></span>' : ''}${r.userName}</td>
+                    <td class="font-[900] italic text-white text-lg">${(r.status === 'new' || (r.status === 'waiting' && !r.mailStatus)) ? '<span class="new-dot"></span>' : ''}${r.userName}</td>
                     <td class="text-slate-300 font-bold text-xs italic">${r.company || '-'}</td>
                     <td><div class="w-32">${mailBtn}${isSent}</div></td>
                     <td><button class="bg-white/10 hover:bg-white/20 text-white text-[10px] px-5 py-2 rounded-lg font-black shadow-lg transition" onclick="window.openDetail('${r.id}')">詳細</button></td>
