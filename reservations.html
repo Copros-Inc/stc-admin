@@ -183,63 +183,72 @@
         window.openDetail = (id) => {
             const r = reservations.find(item => item.id === id);
             const body = document.getElementById('modal-body');
-            
-            // 編集用入力欄の生成
+            const isFull = r.mode === 'full'; // 本申込かどうかの判定
+
             const editRow = (label, field, val) => `
-                <div class="mb-5 border-b border-white/5 pb-2 text-left">
+                <div class="mb-4 border-b border-white/5 pb-1 text-left">
                     <span class="block text-[9px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">${label}</span>
                     <input type="text" id="edit-${field}" value="${val || ''}" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300">
                 </div>`;
 
             body.innerHTML = `
-                <!-- 左側：ステータス管理 & 編集エリア -->
-                <div class="md:col-span-1 space-y-6">
-                    <div class="bg-white/5 p-6 rounded-[2.5rem] border border-white/10 text-center">
-                        ${r.photos?.user ? `<img src="${r.photos.user}" class="w-full rounded-2xl shadow-2xl">` : '<p class="text-slate-600 italic py-10">写真なし</p>'}
-                    </div>
+                <!-- 左側：ステータス管理 ＆ 編集エリア -->
+                <div class="${isFull ? 'md:col-span-1' : 'md:col-span-3'} space-y-6">
                     
+                    <!-- ステータス切り替えボタン（ここを復活させました） -->
                     <div class="flex flex-wrap gap-2 w-full">
-                        <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition">
+                        <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition shadow-lg">
                             ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
                         </button>
-                        <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="flex-1 bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition">
+                        <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="flex-1 bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition shadow-lg">
                             ${r.docStatus === 'complete' ? '📄 書類完了' : '📝 書類未済'}
                         </button>
                     </div>
 
+                    <!-- 受講者写真 -->
+                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center">
+                        ${r.photos?.user ? `<img src="${r.photos.user}" class="w-full rounded-2xl shadow-2xl">` : '<p class="text-slate-600 italic py-10">写真なし</p>'}
+                    </div>
+
+                    <!-- 編集フォーム -->
                     <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 shadow-inner">
                         <h3 class="text-sky-500 font-black italic text-[10px] mb-6 border-b border-sky-500/20 pb-2 uppercase flex items-center"><i class="fas fa-edit mr-2"></i> Edit Details</h3>
-                        <div class="space-y-1">
-                            ${editRow("受付番号 (No.)", "regNo", r.regNo)}
-                            ${editRow("氏名", "userName", r.userName)}
-                            ${editRow("フリガナ", "userKana", r.userKana)}
-                            ${editRow("電話番号", "phone", r.phone)}
-                            ${editRow("メールアドレス", "email", r.email)}
-                            ${editRow("現住所", "address", r.address)}
-                            ${editRow("会社名", "company", r.company)}
-                        </div>
-                        <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-6 bg-sky-600 text-white py-4 rounded-xl font-black italic uppercase transition hover:bg-sky-500 shadow-lg shadow-sky-600/20 text-[11px]">
-                            変更を保存する (SAVE CHANGES)
-                        </button>
+                        ${editRow("受付番号 (No.)", "regNo", r.regNo)}
+                        ${editRow("氏名", "userName", r.userName)}
+                        ${editRow("フリガナ", "userKana", r.userKana)}
+                        ${editRow("電話番号", "phone", r.phone)}
+                        ${editRow("メールアドレス", "email", r.email)}
+                        ${editRow("現住所", "address", r.address)}
+                        ${editRow("会社名", "company", r.company)}
+                        <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-4 bg-sky-600 text-white py-4 rounded-xl font-black italic uppercase transition hover:bg-sky-500 text-[10px] shadow-lg">変更を保存する (SAVE)</button>
                     </div>
                 </div>
 
-                <!-- 右側：申込書プレビューエリア -->
+                <!-- 右側：申込書プレビューエリア (本申込の時のみ表示) -->
+                ${isFull ? `
                 <div class="md:col-span-2">
                     <h3 class="text-sky-500 font-black italic text-sm mb-4 uppercase flex justify-between items-center px-4">
-                        <span><i class="fas fa-file-invoice mr-2"></i>Form Preview</span>
-                        <span class="text-[10px] text-slate-500 font-bold">※A4 PRINT IMAGE (SCALED)</span>
+                        <span><i class="fas fa-file-invoice mr-2"></i>Official Form Preview</span>
+                        <span class="text-[10px] text-slate-500 font-bold">※A4 PRINT IMAGE</span>
                     </h3>
                     <div class="preview-container">
                         <div id="print-preview-content" class="preview-frame">
-                            <!-- ここに generatePrintHTML(r) の内容が流し込まれます -->
+                            <!-- generatePrintHTML の内容がここに入ります -->
                         </div>
                     </div>
-                </div>`;
+                </div>` : `
+                <div class="md:col-span-2 flex flex-col items-center justify-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 min-h-[400px]">
+                    <i class="fas fa-info-circle text-4xl text-slate-700 mb-4"></i>
+                    <p class="text-slate-500 italic text-sm text-center">仮予約モード（簡易予約）のため<br>申込書のプレビューは表示されません。</p>
+                </div>`}
+            `;
             
-            // プレビューの描画実行
-            document.getElementById('print-preview-content').innerHTML = window.generatePrintHTML(r);
+            // 本申込の場合のみプレビューを描画
+            if (isFull) {
+                document.getElementById('print-preview-content').innerHTML = window.generatePrintHTML(r);
+            }
 
+            // 下部アクションボタンのイベント紐付け
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
             document.getElementById('btn-wait-final').onclick = () => window.processAction(r.id, 'waiting', r);
             document.getElementById('btn-delete-final').onclick = () => window.deleteRes(r.id);
@@ -406,170 +415,89 @@
             } catch (e) { alert("保存失敗: " + e.message); }
         };  
 
-                window.generatePrintHTML = (r) => {
+        window.generatePrintHTML = (r) => {
             const today = new Date();
             const applyYear = today.getFullYear() - 2018;
             return `
-                <div style="font-family: serif; color: #000; line-height: 1.2; font-size: 8.5pt;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
-                        <div style="border: 1px solid #000; padding: 3px; width: 50mm; font-size: 6pt;">【個人情報の取扱いについて】<br>ご記入頂いた個人情報は、安衛法に基づく弊社業務に必要な資料の作成以外には使用致しません。</div>
+                <div style="font-family: 'serif'; color: #000; position: relative; padding-left: 5mm;">
+                    <!-- 左側縦書き注釈 -->
+                    <div style="position: absolute; left: -2mm; top: 80mm; writing-mode: vertical-rl; font-size: 7pt; font-weight: bold; height: 100mm;">
+                        法令により、講習開始後の遅刻・早退・欠席は失格となりますので予めご了承下さい。
+                    </div>
+
+                    <!-- ヘッダー -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2mm;">
+                        <div style="border: 1px solid #000; padding: 2px; width: 55mm; font-size: 6pt;">【個人情報の取扱いについて】<br>ご記入頂いた個人情報は、安衛法に基づく弊社業務に必要な資料の作成以外には使用致しません。</div>
                         <div style="text-align: center; flex-grow: 1;">
-                            <div style="font-size: 14pt; font-weight: bold; text-decoration: underline;">受講申込書（A）</div>
-                            <div style="font-size: 12pt; font-weight: bold;">玉掛け技能講習 19 時間コース</div>
+                            <div style="font-size: 16pt; font-weight: bold;">受講申込書（A）</div>
+                            <div style="font-size: 14pt; font-weight: bold;">玉掛け技能講習 19 時間コース</div>
                         </div>
-                        <div style="width: 24mm; height: 30mm; border: 1px solid #000; text-align: center; overflow: hidden;">
-                            ${r.photos?.user ? `<img src="${r.photos.user}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="font-size:7pt; margin-top:10mm;">写真(1枚)<br>30mm×24mm</div>'}
+                        <div style="text-align: right;">
+                            <div style="font-size: 8pt; margin-bottom: 2mm;">2026.7</div>
+                            <div style="width: 24mm; height: 30mm; border: 1px solid #000; position: relative;">
+                                ${r.photos?.user ? `<img src="${r.photos.user}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="font-size:7pt; padding-top:10mm;">写真(1枚)<br>30x24mm</div>'}
+                            </div>
                         </div>
                     </div>
-                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
-                        <tr><td style="border: 1px solid #000; padding: 5px; background: #eee; width: 15mm; font-weight: bold;">氏名</td><td style="border: 1px solid #000; padding: 5px; font-size: 14pt; font-weight: bold;">${r.userName}</td><td style="border: 1px solid #000; padding: 5px; width: 40mm;">記入日：R ${applyYear}年 ${today.getMonth()+1}月 ${today.getDate()}日</td></tr>
-                        <tr><td style="border: 1px solid #000; padding: 5px; background: #eee;">住所</td><td colspan="2" style="border: 1px solid #000; padding: 5px;">〒 ${r.zip || ''} ${r.address}<br>電話：${r.phone}</td></tr>
-                        <tr><td style="border: 1px solid #000; padding: 5px; background: #eee;">勤務先</td><td colspan="2" style="border: 1px solid #000; padding: 5px;">会社名：${r.company || ''}<br>所在地：${r.compAddress || ''}</td></tr>
+
+                    <!-- チェックリスト1 -->
+                    <div style="border: 1px solid #000; border-bottom: none; display: inline-block; padding: 2px 5px; font-weight: bold; font-size: 8pt;">チェックリスト１【注意事項】</div>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 5mm; border: 1px solid #000; font-size: 8pt;">
+                        <tr>
+                            <td style="padding: 3px; border: 1px solid #000;">・黒のボールペンで太枠のみ、記入して下さい。 ・誤記入は二重線で訂正印。修正液厳禁。 ・虚偽申請は無効。</td>
+                            <td style="width: 20mm; text-align: center; border: 1px solid #000;">□ はい<br>□ はい<br>□ はい</td>
+                        </tr>
                     </table>
-                    <div style="margin-top: 10px; border: 1px solid #000; padding: 10px; font-size: 7pt;">
-                        【同意事項】本申込書の提出をもって、記載内容に虚偽がないこと、及び貴センターの規約に同意したものとします。
+
+                    <!-- メイン入力欄 -->
+                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 9pt;">
+                        <tr>
+                            <td rowspan="2" style="width: 15mm; background: #eee; text-align: center; font-weight: bold; border: 1px solid #000;">氏名</td>
+                            <td colspan="2" style="height: 15mm; border: 1px solid #000; padding: 5px;">
+                                <span style="font-size: 7pt;">フリガナ：${r.userKana}</span><br>
+                                <span style="font-size: 16pt; font-weight: bold; margin-left: 5mm;">${r.userName}</span>
+                            </td>
+                            <td style="width: 50mm; border: 1px solid #000; font-size: 7pt; padding: 5px;">
+                                助成金利用： □ 有 ・ □ 無<br>
+                                記入日： R ${applyYear}年 ${today.getMonth()+1}月 ${today.getDate()}日
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width: 45mm; border: 1px solid #000;">生年月日： S・H　　年　月　日</td>
+                            <td colspan="2" style="border: 1px solid #000;">受講日： R 　年　月　日 ～ R 　年　月　日</td>
+                        </tr>
+                        <tr>
+                            <td style="background: #eee; text-align: center; font-weight: bold; border: 1px solid #000;">住所</td>
+                            <td colspan="3" style="height: 18mm; border: 1px solid #000; padding: 5px;">〒 ${r.zip || ''}<br>${r.address}<br>電話：${r.phone}</td>
+                        </tr>
+                        <tr>
+                            <td style="background: #eee; text-align: center; font-weight: bold; border: 1px solid #000;">勤務先</td>
+                            <td colspan="3" style="height: 18mm; border: 1px solid #000; padding: 5px;">会社名：${r.company || ''}<br>所在地：${r.compAddress || ''}<br>電話：${r.compPhone || ''} 　FAX：</td>
+                        </tr>
+                    </table>
+
+                    <!-- チェックリスト3・振込先 -->
+                    <div style="border: 1px solid #000; border-bottom: none; display: inline-block; padding: 2px 5px; font-weight: bold; font-size: 8pt; margin-top: 5mm;">チェックリスト３【講習料】</div>
+                    <div style="border: 2px solid #000; display: flex; padding: 10px; font-size: 9pt;">
+                        <div style="flex: 1;">受講料 <span style="font-size: 18pt; font-weight: bold;">¥25,000-</span><br>(税込・テキスト代込)</div>
+                        <div style="flex: 1.5; border: 1px solid #000; border-radius: 10px; padding: 5px;">振込先：山口銀行 長府支店（普通） 5076778<br>口座名：株式会社 コプロス</div>
                     </div>
-                    <div style="text-align: right; margin-top: 10px; font-weight: bold;">下関トレーニングセンター</div>
+
+                    <!-- 弊社記入欄 -->
+                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; margin-top: 10mm; text-align: center; font-size: 8pt;">
+                        <tr style="background: #eee;">
+                            <td style="width: 30%; border: 1px solid #000;">弊社記入欄</td>
+                            <td style="width: 40%; border: 1px solid #000;">当日の本人確認</td>
+                            <td style="border: 1px solid #000;">実施管理者 / 修了証番号</td>
+                        </tr>
+                        <tr style="height: 15mm;">
+                            <td style="border: 1px solid #000;">□ 銀行振込<br>入金日： 　/ 　</td>
+                            <td style="border: 1px solid #000; font-size: 7pt;">□ 免許証 □ 保険証 □ 住基 □ 他</td>
+                            <td style="border: 1px solid #000;"></td>
+                        </tr>
+                    </table>
                 </div>`;
         };
-
-window.printReservation = (id) => {
-    const r = reservations.find(item => item.id === id);
-    const printWindow = window.open('', '_blank');
-    
-    // 日付の分解（令和表記などのため）
-    const today = new Date();
-    const applyYear = today.getFullYear() - 2018; // 令和計算
-
-    const html = `
-        <html>
-        <head>
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap');
-                @page { size: A4; margin: 0; }
-                body { font-family: "Noto Serif JP", serif; width: 210mm; height: 296mm; padding: 10mm; box-sizing: border-box; font-size: 9pt; color: #000; line-height: 1.3; }
-                .container { width: 190mm; margin: 0 auto; position: relative; border: 1px solid #fff; }
-                
-                /* ヘッダーエリア */
-                .header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-                .privacy-note { border: 1px solid #000; padding: 5px; width: 55mm; font-size: 7pt; }
-                .title-area { text-align: center; flex-grow: 1; }
-                .photo-box { width: 24mm; height: 30mm; border: 1px solid #000; text-align: center; position: relative; }
-                .photo-box img { width: 100%; height: 100%; object-fit: cover; }
-
-                /* 共通テーブル設定 */
-                table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
-                th, td { border: 1px solid #000; padding: 4px; }
-                .bg-gray { background: #f2f2f2; font-weight: bold; }
-                
-                /* 左側の縦書きテキスト */
-                .vertical-text { position: absolute; left: -8mm; top: 150mm; writing-mode: vertical-rl; font-size: 8pt; font-weight: bold; }
-
-                /* チェックリスト枠 */
-                .checklist-title { border: 2px solid #000; border-bottom: none; padding: 2px 10px; font-weight: bold; display: inline-block; }
-                
-                /* 下部デザイン */
-                .flex-box { display: flex; gap: 10px; }
-                .stamp-area { border: 2px solid #000; border-radius: 15px; padding: 10px; flex: 1; position: relative; }
-                .price-text { font-size: 20pt; font-weight: 900; font-family: serif; }
-            </style>
-        </head>
-        <body onload="window.print()">
-            <div class="container">
-                <div class="vertical-text">法令により、講習開始後の遅刻・早退・欠席は失格となりますので予めご了承下さい。</div>
-                
-                <div class="header-flex">
-                    <div class="privacy-note">【個人情報の取扱いについて】<br>ご記入頂いた個人情報は、安衛法に基づく弊社業務に必要な資料の作成以外には使用致しません。</div>
-                    <div class="title-area">
-                        <div style="font-size: 16pt; font-weight: bold;">受講申込書（A）</div>
-                        <div style="font-size: 14pt; font-weight: bold;">玉掛け技能講習 19 時間コース</div>
-                    </div>
-                    <div>
-                        <div style="text-align: right; margin-bottom: 5px;">2026.7</div>
-                        <div class="photo-box">
-                            ${r.photos?.user ? `<img src="${r.photos.user}">` : '<div style="margin-top:10mm">写真(1枚)<br>縦30mm×横24mm</div>'}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="checklist-title">チェックリスト１【注意事項】</div>
-                <table>
-                    <tr>
-                        <td style="width: 85%;">
-                            ・黒のボールペンで太枠のみ、記入して下さい。<br>
-                            ・誤記入は、二重線(=)で訂正のうえ、訂正印を押してください。修正液は厳禁です。<br>
-                            ・申し込みに当たって虚偽の申請は違法行為であり、修了証が無効となります。
-                        </td>
-                        <td style="text-align: center;">□ はい<br>□ はい<br>□ はい</td>
-                    </tr>
-                </table>
-
-                <div style="font-weight: bold; margin: 5px 0;">黒のボールペンではっきりと分かりやすい文字で御記入下さい。</div>
-                <table style="border: 2px solid #000;">
-                    <tr>
-                        <th rowspan="2" class="bg-gray" style="width: 15mm;">フリガナ<br><br>氏名</th>
-                        <td colspan="2" style="height: 15mm; vertical-align: top; font-size: 8pt;">${r.userKana}<br><span style="font-size: 16pt; font-weight: bold; margin-left: 10mm;">${r.userName}</span></td>
-                        <td style="width: 50mm; font-size: 8pt; border-left: 2px solid #000;">
-                            人材開発支援助成金を利用する方は○を記入→ <span style="display:inline-block; width:15px; height:15px; border:1px dashed #f00; border-radius:50%; vertical-align:middle;"></span>
-                            <div style="margin-top: 5px; border-top: 1px solid #000; padding-top: 5px;">
-                                記入日　R　${applyYear}　年　${today.getMonth()+1}　月　${today.getDate()}　日
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="width: 40mm;">誕生日 S・H　　　　年　　月　　日<br>(満　　　歳)</td>
-                        <td colspan="2">受講日　R　　　年　　月　　日 ～ R　　年　　月　　日</td>
-                    </tr>
-                    <tr>
-                        <th class="bg-gray">住所</th>
-                        <td colspan="3" style="height: 20mm;">
-                            〒 ${r.zip || ''}<br>
-                            ${r.address}<br>
-                            <span style="font-size: 8pt;">電話： ${r.phone}</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th class="bg-gray">勤務先</th>
-                        <td colspan="3" style="height: 20mm;">
-                            会社名： ${r.company || ''}<br>
-                            〒 ${r.compZip || ''}　${r.compAddress || ''}<br>
-                            電話： ${r.compPhone || ''}　　　FAX：
-                        </td>
-                    </tr>
-                </table>
-
-                <div class="checklist-title">チェックリスト３【講習料の支払いについて】</div>
-                <div class="flex-box" style="border: 2px solid #000; padding: 10px;">
-                    <div style="flex: 1;">
-                        受講料 <span class="price-text">¥25,000-</span><br>
-                        (テキスト代 1,800 円・税込含む)
-                    </div>
-                    <div class="stamp-area">
-                        振込先：山口銀行　長府支店（普通）　５０７６７７８<br>
-                        口座名：株式会社　コプロス
-                    </div>
-                </div>
-
-                <div style="font-size: 7.5pt; margin-top: 5px;">
-                    受講申込者は、本申込書を提出することで、下記に同意したものとします。<br>
-                    ◎本申込書に虚偽の記載が無いことを確約します。◎自らが反社会的勢力に属さず、密接な関係をもたず...（略）
-                </div>
-
-                <table style="margin-top: 5px; border: 2px solid #000;">
-                    <tr class="bg-gray" style="font-size: 8pt; text-align: center;">
-                        <td style="width: 25%;">弊社記入欄</td>
-                        <td style="width: 40%;">当日の本人確認</td>
-                        <td style="width: 15%;">実施管理者</td>
-                        <td>修了証番号</td>
-                    </tr>
-                    <tr style="height: 15mm;">
-                        <td>□ 銀行振込<br>□ その他</td>
-                        <td style="font-size: 7pt;">□ 運転免許証　□ 保険証　□ パスポート　□ 住基カード<br>□ 当センターでの取得済み修了証</td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                </table>
-            </div>
         </body>
         </html>
     `;
