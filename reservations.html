@@ -190,10 +190,12 @@
         window.openDetail = (id) => {
             const r = reservations.find(item => item.id === id);
             const body = document.getElementById('modal-body');
-            const isFull = (r.mode === 'full'); 
 
-            // 【重要】写真データをあらゆる可能性から探し出すロジック
-            const photoSrc = r.userPhotoBase64 || (r.photos && typeof r.photos === 'object' ? r.photos.user : r.photos) || null;
+            // 【最重要】写真データの取得ロジック（どのフィールドにあっても拾う）
+            const photoSrc = r.userPhotoBase64 || (r.photos && typeof r.photos === 'object' ? r.photos.user : (typeof r.photos === 'string' ? r.photos : null));
+            
+            // 写真があればプレビューを表示する
+            const hasPhoto = !!photoSrc;
 
             const editRow = (label, field, val) => `
                 <div class="mb-4 border-b border-white/5 pb-1 text-left">
@@ -202,58 +204,49 @@
                 </div>`;
 
             body.innerHTML = `
-                <div class="${isFull ? 'md:col-span-1' : 'md:col-span-3'} space-y-6">
+                <!-- 左側：写真と編集 (写真があれば1/3幅、なければ全幅) -->
+                <div class="${hasPhoto ? 'md:col-span-1' : 'md:col-span-3'} space-y-6">
                     <div class="flex flex-wrap gap-2 w-full">
-                        <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition shadow-lg">
+                        <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px]">
                             ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
                         </button>
-                        <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="flex-1 bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition shadow-lg">
+                        <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="flex-1 bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px]">
                             ${r.docStatus === 'complete' ? '📄 書類完了' : '📝 書類未済'}
                         </button>
                     </div>
 
-                    <!-- 受講者写真表示エリア -->
-                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center min-h-[200px] flex items-center justify-center overflow-hidden">
-                        ${photoSrc 
-                            ? `<img src="${photoSrc}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10 object-contain">` 
-                            : `<div class="text-slate-600 italic text-xs"><i class="fas fa-image text-3xl mb-2 block"></i>写真なし<br>(仮予約 / 未添付)</div>`}
+                    <!-- 写真エリア：ある時だけ表示 -->
+                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center">
+                        ${hasPhoto 
+                            ? `<img src="${photoSrc}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10">` 
+                            : '<p class="text-slate-600 italic py-10">（写真データなし）</p>'}
                     </div>
 
                     <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 shadow-inner">
                         <h3 class="text-sky-500 font-black italic text-[10px] mb-6 border-b border-sky-500/20 pb-2 uppercase flex items-center"><i class="fas fa-edit mr-2"></i> Edit Details</h3>
-                        ${editRow("受付番号 (No.)", "regNo", r.regNo)}
+                        ${editRow("受付番号", "regNo", r.regNo)}
                         ${editRow("氏名", "userName", r.userName)}
                         ${editRow("フリガナ", "userKana", r.userKana)}
-                        ${editRow("電話番号", "phone", r.phone)}
-                        ${editRow("メールアドレス", "email", r.email)}
-                        ${editRow("現住所", "address", r.address)}
-                        ${editRow("会社名", "company", r.company)}
-                        <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-4 bg-sky-600 text-white py-4 rounded-xl font-black italic uppercase transition hover:bg-sky-500 text-[10px] shadow-lg shadow-sky-600/20">
-                            変更を保存する (SAVE CHANGES)
-                        </button>
+                        ${editRow("電話", "phone", r.phone)}
+                        ${editRow("住所", "address", r.address)}
+                        ${editRow("会社", "company", r.company)}
+                        <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-4 bg-sky-600 text-white py-4 rounded-xl font-black italic uppercase transition hover:bg-sky-500 text-[10px]">保存 (SAVE)</button>
                     </div>
                 </div>
 
-                <div class="md:col-span-2 space-y-4">
-                    ${isFull ? `
-                        <h3 class="text-sky-500 font-black italic text-sm mb-4 uppercase flex justify-between items-center px-4">
-                            <span><i class="fas fa-file-invoice mr-2"></i>Official Form Preview</span>
-                            <span class="text-[10px] text-slate-500 font-bold">※A4 PRINT IMAGE</span>
-                        </h3>
-                        <div class="preview-container">
-                            <div id="print-preview-content" class="preview-frame"></div>
-                        </div>
-                    ` : `
-                        <div class="h-full min-h-[500px] flex flex-col items-center justify-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 p-20 text-center">
-                            <i class="fas fa-info-circle text-5xl text-slate-700 mb-6"></i>
-                            <p class="text-slate-500 italic text-lg leading-relaxed">仮予約モードのため、<br>申込書のプレビューは表示されません。</p>
-                        </div>
-                    `}
-                </div>`;
+                <!-- 右側：プレビューエリア (写真がある時のみ表示) -->
+                ${hasPhoto ? `
+                <div class="md:col-span-2">
+                    <h3 class="text-sky-500 font-black italic text-sm mb-4 uppercase flex justify-between items-center px-4">
+                        <span>Official Form Preview</span>
+                    </h3>
+                    <div class="preview-container">
+                        <div id="print-preview-content" class="preview-frame"></div>
+                    </div>
+                </div>` : ''}`;
             
-            if (isFull) {
-                const previewEl = document.getElementById('print-preview-content');
-                if (previewEl) previewEl.innerHTML = window.generatePrintHTML(r);
+            if (hasPhoto) {
+                document.getElementById('print-preview-content').innerHTML = window.generatePrintHTML(r);
             }
 
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
@@ -425,7 +418,7 @@
             const today = new Date();
             const applyYear = today.getFullYear() - 2018;
 
-            const photoSrc = r.userPhotoBase64 || (r.photos && typeof r.photos === 'object' ? r.photos.user : r.photos) || null;
+            const photoSrc = r.userPhotoBase64 || (r.photos && typeof r.photos === 'object' ? r.photos.user : (typeof r.photos === 'string' ? r.photos : null));
 
 
             return `
@@ -444,11 +437,9 @@
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 8pt; margin-bottom: 2mm;">2026.7</div>
-                            <div style="width: 24mm; height: 30mm; border: 1px solid #000; position: relative; overflow: hidden; background: #fff;">
-                                ${photoSrc 
-                                    ? `<img src="${photoSrc}" style="width:100%; height:100%; object-fit:cover;">` 
-                                    : '<div style="font-size:7pt; padding-top:10mm; text-align:center; color:#ccc;">写真なし</div>'}
-                            </div>
+            <div style="width: 24mm; height: 30mm; border: 1px solid #000; position: relative; overflow: hidden; background: #fff;">
+                ${photoSrc ? `<img src="${photoSrc}" style="width:100%; height:100%; object-fit:cover;">` : '写真なし'}
+            </div>
                         </div>
                     </div>
 
