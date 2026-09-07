@@ -190,7 +190,10 @@
         window.openDetail = (id) => {
             const r = reservations.find(item => item.id === id);
             const body = document.getElementById('modal-body');
-            const isFull = (r.mode === 'full'); // 本申込かどうかの判定
+            const isFull = (r.mode === 'full'); 
+
+            // 写真データのURLを安全に取得
+            const photoSrc = (r.photos && r.photos.user) ? r.photos.user : null;
 
             const editRow = (label, field, val) => `
                 <div class="mb-4 border-b border-white/5 pb-1 text-left">
@@ -202,7 +205,6 @@
                 <!-- 左側：ステータス管理 ＆ 編集エリア -->
                 <div class="${isFull ? 'md:col-span-1' : 'md:col-span-3'} space-y-6">
                     
-                    <!-- ステータス切り替えボタン -->
                     <div class="flex flex-wrap gap-2 w-full">
                         <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition shadow-lg">
                             ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
@@ -212,11 +214,11 @@
                         </button>
                     </div>
 
-                    <!-- 受講者写真（本申込時のみ表示） -->
-                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center">
-                        ${r.photos?.user 
-                            ? `<img src="${r.photos.user}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10">` 
-                            : '<p class="text-slate-600 italic py-10">写真なし（仮予約）</p>'}
+                    <!-- 受講者写真 -->
+                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center min-h-[200px] flex items-center justify-center">
+                        ${photoSrc 
+                            ? `<img src="${photoSrc}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10">` 
+                            : '<p class="text-slate-600 italic py-10">写真なし（仮予約 / 未添付）</p>'}
                     </div>
 
                     <!-- 編集フォーム -->
@@ -237,7 +239,7 @@
                     </div>
                 </div>
 
-                <!-- 右側：申込書プレビューエリア (本申込の時のみ表示) -->
+                <!-- 右側：申込書プレビューエリア -->
                 <div class="md:col-span-2">
                     ${isFull ? `
                         <h3 class="text-sky-500 font-black italic text-sm mb-4 uppercase flex justify-between items-center px-4">
@@ -245,9 +247,7 @@
                             <span class="text-[10px] text-slate-500 font-bold">※A4 PRINT IMAGE</span>
                         </h3>
                         <div class="preview-container">
-                            <div id="print-preview-content" class="preview-frame">
-                                <!-- generatePrintHTML(r) の内容がここに描画されます -->
-                            </div>
+                            <div id="print-preview-content" class="preview-frame"></div>
                         </div>
                     ` : `
                         <div class="h-full min-h-[500px] flex flex-col items-center justify-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 p-20 text-center">
@@ -260,15 +260,11 @@
                     `}
                 </div>`;
             
-            // 本申込の場合のみプレビューを描画
             if (isFull) {
-                const previewContent = document.getElementById('print-preview-content');
-                if (previewContent) {
-                    previewContent.innerHTML = window.generatePrintHTML(r);
-                }
+                const previewEl = document.getElementById('print-preview-content');
+                if (previewEl) previewEl.innerHTML = window.generatePrintHTML(r);
             }
 
-            // ボタンのonclick紐付け
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
             document.getElementById('btn-delete-final').onclick = () => window.deleteRes(r.id);
             document.getElementById('modal-overlay').classList.add('active');
@@ -437,6 +433,9 @@
         window.generatePrintHTML = (r) => {
             const today = new Date();
             const applyYear = today.getFullYear() - 2018;
+
+            const photoSrc = (r.photos && r.photos.user) ? r.photos.user : null;
+
             return `
                 <div style="font-family: 'serif'; color: #000; position: relative; padding-left: 5mm;">
                     <!-- 左側縦書き注釈 -->
@@ -454,7 +453,9 @@
                         <div style="text-align: right;">
                             <div style="font-size: 8pt; margin-bottom: 2mm;">2026.7</div>
                             <div style="width: 24mm; height: 30mm; border: 1px solid #000; position: relative;">
-                                ${r.photos?.user ? `<img src="${r.photos.user}" style="width:100%; height:100%; object-fit:cover;">` : '<div style="font-size:7pt; padding-top:10mm;">写真(1枚)<br>30x24mm</div>'}
+                                ${photoSrc 
+                    ? `<img src="${photoSrc}" style="width:100%; height:100%; object-fit:cover;">` 
+                    : '<div style="font-size:7pt; padding-top:10mm; text-align:center;">写真(1枚)<br>30x24mm</div>'}
                             </div>
                         </div>
                     </div>
