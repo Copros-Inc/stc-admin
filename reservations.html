@@ -219,14 +219,37 @@
                     </div>
                     
                     <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 shadow-inner">
-                        <h3 class="text-sky-500 font-black italic text-[10px] mb-6 border-b border-sky-500/20 pb-2 uppercase flex items-center"><i class="fas fa-edit mr-2"></i> Edit Details</h3>
-                        ${editRow("受付番号", "regNo", r.regNo)}
-                        ${editRow("氏名", "userName", r.userName)}
-                        ${editRow("フリガナ", "userKana", r.userKana)}
-                        ${editRow("電話", "phone", r.phone)}
-                        ${editRow("住所", "address", r.address)}
-                        ${editRow("会社", "company", r.company)}
-                        <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-4 bg-sky-600 text-white py-4 rounded-xl font-black italic uppercase transition hover:bg-sky-500 text-[10px]">保存 (SAVE)</button>
+                        <h3 class="text-sky-500 font-black italic text-[10px] mb-6 border-b border-sky-500/20 pb-2 uppercase flex items-center"><i class="fas fa-edit mr-2"></i> Edit Application Details</h3>
+                        
+                        <!-- 2列グリッドで全項目を表示 -->
+                        <div class="grid md:grid-cols-2 gap-x-6 gap-y-1">
+                            ${editRow("受付番号", "regNo", r.regNo)}
+                            ${editRow("氏名（漢字）", "userName", r.userName)}
+                            ${editRow("フリガナ", "userKana", r.userKana)}
+                            ${editRow("生年月日", "birthDate", r.birthDate)}
+                            ${editRow("旧姓・通称の併記", "maidenName", r.maidenName)}
+                            ${editRow("電話番号", "phone", r.phone)}
+                            ${editRow("メールアドレス", "email", r.email)}
+                            ${editRow("現住所（〒）", "zip", r.zip)}
+                            <div class="md:col-span-2">${editRow("現住所（県・市・番地）", "address", r.address)}</div>
+                            
+                            <div class="md:col-span-2 border-t border-white/5 my-4 pt-2 text-sky-600 text-[8px] font-black uppercase italic">Employment & Receipt</div>
+                            ${editRow("会社名", "company", r.company)}
+                            ${editRow("会社電話", "compPhone", r.compPhone)}
+                            ${editRow("会社住所（〒）", "compZip", r.compZip)}
+                            ${editRow("会社住所（住所）", "compAddress", r.compAddress)}
+                            ${editRow("助成金利用", "subsidy", r.subsidy)}
+                            ${editRow("領収書宛名", "receiptName", r.receiptName)}
+
+                            <div class="md:col-span-2 border-t border-white/5 my-4 pt-2 text-sky-600 text-[8px] font-black uppercase italic">Qualification / Exemptions</div>
+                            ${editRow("免除区分", "exType", r.exType)}
+                            ${editRow("修了証/免許番号", "exNo", r.exNoA || r.exNo || r.licNo)}
+                            ${editRow("交付機関/取得日", "exInfo", r.exOrgA || r.exDateA || r.exDateB)}
+                        </div>
+
+                        <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-8 bg-sky-600 text-white py-4 rounded-xl font-black italic uppercase transition hover:bg-sky-500 text-[11px] shadow-lg shadow-sky-600/20">
+                            変更を保存する (SAVE ALL CHANGES)
+                        </button>
                     </div>
                 </div>
 
@@ -403,10 +426,21 @@
                 regNo: document.getElementById('edit-regNo').value,
                 userName: document.getElementById('edit-userName').value,
                 userKana: document.getElementById('edit-userKana').value,
+                birthDate: document.getElementById('edit-birthDate').value,
+                maidenName: document.getElementById('edit-maidenName').value,
                 phone: document.getElementById('edit-phone').value,
+                email: document.getElementById('edit-email').value,
+                zip: document.getElementById('edit-zip').value,
                 address: document.getElementById('edit-address').value,
                 company: document.getElementById('edit-company').value,
-                email: document.getElementById('edit-email').value,
+                compPhone: document.getElementById('edit-compPhone').value,
+                compZip: document.getElementById('edit-compZip').value,
+                compAddress: document.getElementById('edit-compAddress').value,
+                subsidy: document.getElementById('edit-subsidy').value,
+                receiptName: document.getElementById('edit-receiptName').value,
+                exType: document.getElementById('edit-exType').value,
+                exNo: document.getElementById('edit-exNo').value,
+                exInfo: document.getElementById('edit-exInfo').value
             };
             if(!confirm("内容を保存しますか？")) return;
             try {
