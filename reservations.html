@@ -95,7 +95,6 @@
             <div class="mt-12 flex flex-wrap gap-6 pt-10 border-t border-white/5">
                 <button id="btn-accept-final" class="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-5 rounded-2xl font-[900] italic shadow-lg transition text-lg">受付を確定する</button>
                 <button id="btn-print-preview" onclick="window.printReservation('${r.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-5 rounded-2xl font-[900] italic shadow-lg transition text-lg"><i class="fas fa-print mr-2"></i> 申込書印刷</button> 
-                <button id="btn-wait-final" class="bg-amber-600 hover:bg-amber-500 text-white px-10 py-5 rounded-2xl font-[900] italic shadow-lg transition text-lg">キャンセル待ち登録</button>
                 <button onclick="closeModal()" class="bg-slate-700 text-white px-10 py-5 rounded-2xl font-[900] italic text-lg">閉じる</button>
                 <button id="btn-delete-final" class="bg-red-900/50 text-red-400 px-8 py-5 rounded-2xl font-[900] italic text-sm ml-auto">削除</button>
             </div>
@@ -179,7 +178,7 @@
                     <td class="text-sky-400 font-black italic text-[10px]">${r.regNo || '-'}</td>
                     <td>${modeTag}</td>
                     <td><div class="text-[#00a2ff] font-[900] italic text-sm">${cleanCourseName}</div><div class="text-[10px] text-white opacity-60 font-en font-bold">${cleanCourseDate}</div></td>
-                    <td class="font-[900] italic text-white text-lg">${(r.status === 'new' || (r.status === 'waiting' && !r.mailStatus)) ? '<span class="new-dot"></span>' : ''}${r.userName}</td>
+                    <td class="font-[900] italic text-white text-lg">${!r.mailStatus ? '<span class="new-dot"></span>' : ''}${r.userName}</td>
                     <td class="text-slate-300 font-bold text-xs italic">${r.company || '-'}</td>
                     <td><div class="w-32">${mailBtn}${isSent}</div></td>
                     <td><button class="bg-white/10 hover:bg-white/20 text-white text-[10px] px-5 py-2 rounded-lg font-black shadow-lg transition" onclick="window.openDetail('${r.id}')">詳細</button></td>
@@ -191,12 +190,10 @@
             const r = reservations.find(item => item.id === id);
             const body = document.getElementById('modal-body');
 
-            // 【最重要】写真データの取得ロジック（どのフィールドにあっても拾う）
             const photoSrc = r.userPhotoBase64 || (r.photos && typeof r.photos === 'object' ? r.photos.user : (typeof r.photos === 'string' ? r.photos : null));
+            const hasPhoto = !!photoSrc; 
+            const isFull = (r.mode === 'full');
             
-            // 写真があればプレビューを表示する
-            const hasPhoto = !!photoSrc;
-
             const editRow = (label, field, val) => `
                 <div class="mb-4 border-b border-white/5 pb-1 text-left">
                     <span class="block text-[9px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">${label}</span>
@@ -204,24 +201,23 @@
                 </div>`;
 
             body.innerHTML = `
-                <!-- 左側：写真と編集 (写真があれば1/3幅、なければ全幅) -->
-                <div class="${hasPhoto ? 'md:col-span-1' : 'md:col-span-3'} space-y-6">
-                    <div class="flex flex-wrap gap-2 w-full">
-                        <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px]">
+                <!-- 左側：写真と編集 -->
+                <div class="${(isFull || hasPhoto) ? 'md:col-span-1' : 'md:col-span-3'} space-y-6">
+                    <div class="flex gap-2 w-full">
+                        <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition">
                             ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
                         </button>
-                        <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="flex-1 bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px]">
+                        <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="flex-1 bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition">
                             ${r.docStatus === 'complete' ? '📄 書類完了' : '📝 書類未済'}
                         </button>
                     </div>
 
-                    <!-- 写真エリア：ある時だけ表示 -->
-                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center">
-                        ${hasPhoto 
+                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center min-h-[150px] flex items-center justify-center">
+                        ${photoSrc 
                             ? `<img src="${photoSrc}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10">` 
-                            : '<p class="text-slate-600 italic py-10">（写真データなし）</p>'}
+                            : '<p class="text-slate-600 italic text-xs">写真は未送付です</p>'}
                     </div>
-
+                    
                     <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 shadow-inner">
                         <h3 class="text-sky-500 font-black italic text-[10px] mb-6 border-b border-sky-500/20 pb-2 uppercase flex items-center"><i class="fas fa-edit mr-2"></i> Edit Details</h3>
                         ${editRow("受付番号", "regNo", r.regNo)}
@@ -234,25 +230,31 @@
                     </div>
                 </div>
 
-                <!-- 右側：プレビューエリア (写真がある時のみ表示) -->
-                ${hasPhoto ? `
+                <!-- 右側：プレビューエリア -->
                 <div class="md:col-span-2">
-                    <h3 class="text-sky-500 font-black italic text-sm mb-4 uppercase flex justify-between items-center px-4">
-                        <span>Official Form Preview</span>
-                    </h3>
-                    <div class="preview-container">
-                        <div id="print-preview-content" class="preview-frame"></div>
-                    </div>
-                </div>` : ''}`;
+                    ${(isFull || hasPhoto) ? `
+                        <h3 class="text-sky-500 font-black italic text-sm mb-4 uppercase">Official Form Preview</h3>
+                        <div class="preview-container">
+                            <div id="print-preview-content" class="preview-frame"></div>
+                        </div>
+                    ` : `
+                        <div class="h-full flex items-center justify-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 p-20 text-slate-500 italic">
+                            仮予約モードのためプレビュー非表示
+                        </div>
+                    `}
+                </div>`;
             
-            if (hasPhoto) {
-                document.getElementById('print-preview-content').innerHTML = window.generatePrintHTML(r);
+            if (isFull || hasPhoto) {
+                const previewBox = document.getElementById('print-preview-content');
+                if (previewBox) {
+                    previewBox.innerHTML = window.generatePrintHTML(r, photoSrc);
+                }
             }
 
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
             document.getElementById('btn-delete-final').onclick = () => window.deleteRes(r.id);
             document.getElementById('modal-overlay').classList.add('active');
-        };
+        }; // ← この閉じカッコが重要です
         
         window.processAction = async (id, status, r) => {
             if(!confirm(`ステータスを更新しますか？`)) return;
