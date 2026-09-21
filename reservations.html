@@ -258,7 +258,7 @@
                                 const cName = r.courseName || "";
                                 if (cName.includes("玉掛け")) {
                                     const applyYear = new Date().getFullYear() - 2018;
-                                    const todayStr = `R ${applyYear}年 ${new Date().getMonth()+1}月 ${new Date().getDate()}日`;
+                                    const todayStr = "R " + applyYear + "年 " + (new Date().getMonth()+1) + "月 " + new Date().getDate() + "日";
                                     
                                     return `
                                         <div class="p-4 bg-white text-black min-h-full font-serif border border-gray-300 shadow-sm text-[9px] leading-tight">
@@ -275,9 +275,7 @@
                                                 <tr>
                                                     <td class="border border-black p-1 bg-gray-100 w-[50px]">フリガナ</td>
                                                     <td class="border border-black p-1 font-bold text-blue-800 bg-yellow-50" colspan="2">${r.userKana || ''}</td>
-                                                    <td class="border border-black p-1 text-[7px]" rowspan="2">
-                                                        記入日：<br>${todayStr}
-                                                    </td>
+                                                    <td class="border border-black p-1 text-[7px]" rowspan="2">記入日：<br>${todayStr}</td>
                                                     <td class="border border-black p-1 text-center align-middle w-[70px]" rowspan="4">
                                                         ${photoSrc ? `<img src="${photoSrc}" class="w-[55px] h-[70px] object-cover mx-auto">` : '<div class="text-[7px] text-gray-400">証明写真<br>(30x24)</div>'}
                                                     </td>
@@ -321,16 +319,12 @@
                                                     <td class="border border-black p-1 bg-yellow-50" colspan="2"></td>
                                                 </tr>
                                             </table>
-
                                             <div class="border-2 border-double border-black p-1 mb-1 flex justify-between items-center bg-gray-50">
                                                 <div class="pl-2">
                                                     <div class="font-bold text-[11px]">受講料：￥25,000-</div>
                                                     <div class="text-[7px]">(テキスト代1,800円税込)</div>
                                                 </div>
-                                                <div class="text-[7px] pr-2 text-right">
-                                                    振込先：山口銀行 長府支店(普通) 5076778<br>
-                                                    口座名：株式会社 コプロス
-                                                </div>
+                                                <div class="text-[7px] pr-2 text-right">振込先：山口銀行 長府支店(普通) 5076778<br>口座名：株式会社 コプロス</div>
                                             </div>
                                             <div class="text-[6px] text-red-600 font-bold italic text-center">※Excel出力時に正式な書式へ整形されます</div>
                                         </div>`;
