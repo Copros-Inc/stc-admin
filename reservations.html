@@ -54,9 +54,11 @@
 
     <style>
         /* トリミングモーダル用スタイル */
-        .cropper-container { max-height: 500px; width: 100%; background: #000; overflow: hidden; position: relative; }
-        .crop-modal-content { background: #0f172a; border: 2px solid #00a2ff; border-radius: 2rem; padding: 30px; width: 90%; max-width: 600px; }
-        #cropper-image { display: block; max-width: 100%; }
+        .cropper-container { max-height: 500px; width: 100%; background: #000; overflow: visible !important; position: relative; }
+        .crop-modal-content { background: #0f172a; border: 2px solid #00a2ff; border-radius: 2rem; padding: 30px; width: 95%; max-width: 800px; z-index: 2000; }
+        #cropper-image { display: block; max-width: 100%; height: auto; }
+        /* Cropperの枠を強制的に見えるようにする */
+        .cropper-view-box, .cropper-face { border-radius: 0; }
     </style>
 </head>
 <body>
@@ -608,23 +610,22 @@
             image.src = src;
             modal.classList.add('active');
             
-            // 200ミリ秒待機し、かつ読み込み完了を確認してから初期化
             setTimeout(() => {
-                try {
-                    const CropperClass = window.Cropper || (typeof Cropper !== 'undefined' ? Cropper : null);
-                    if (CropperClass) {
-                        cropper = new CropperClass(image, {
-                            aspectRatio: 24 / 30,
-                            viewMode: 1,
-                            dragMode: 'move',
-                            autoCropArea: 0.8,
-                            checkOrientation: false
-                        });
-                    }
-                } catch (e) {
-                    console.error("Cropper init failed:", e);
+                const CropperClass = window.Cropper || (typeof Cropper !== 'undefined' ? Cropper : null);
+                if (CropperClass) {
+                    cropper = new CropperClass(image, {
+                        aspectRatio: 24 / 30,
+                        viewMode: 1, // 画像の外に枠を出さない
+                        autoCropArea: 0.8,
+                        responsive: true,
+                        restore: false,
+                        ready: function () {
+                            // 枠が表示されない問題を解決するためリサイズを強制
+                            this.cropper.crop(); 
+                        }
+                    });
                 }
-            }, 300); 
+            }, 400); // 待ち時間を少し長めの400msに
         };
         
         document.getElementById('btn-crop-save').onclick = async () => {
