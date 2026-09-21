@@ -595,31 +595,36 @@
         let cropper = null;
         let currentEditingId = null;
 
-             window.openCropper = (id, src) => {
+        window.openCropper = (id, src) => {
             currentEditingId = id;
             const modal = document.getElementById('crop-modal');
             const image = document.getElementById('cropper-image');
+            
+            // 以前のCropperインスタンスがあれば破棄
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+
             image.src = src;
             modal.classList.add('active');
             
-            if (cropper) cropper.destroy();
-            
-            // 画像の読み込み完了を待ってからCropperを起動
-            image.onload = () => {
+            // キャッシュ対策：画像がすでに読み込まれているかチェック
+            const initCropper = () => {
                 cropper = new Cropper(image, {
-                    aspectRatio: 24 / 30,
+                    aspectRatio: 24 / 30, // 30mm x 24mm 比率
                     viewMode: 1,
                     dragMode: 'move',
                     autoCropArea: 0.8,
-                    restore: false,
-                    guides: true,
-                    center: true,
-                    highlight: false,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    toggleDragModeOnDblclick: false,
+                    background: false, // 背景のチェッカー模様を消す
                 });
             };
+
+            if (image.complete) {
+                initCropper();
+            } else {
+                image.onload = initCropper;
+            }
         };
 
         document.getElementById('btn-crop-save').onclick = async () => {
