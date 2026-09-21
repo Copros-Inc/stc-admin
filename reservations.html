@@ -600,7 +600,7 @@
             const modal = document.getElementById('crop-modal');
             const image = document.getElementById('cropper-image');
             
-            // 以前のCropperインスタンスがあれば破棄
+            // 初期化
             if (cropper) {
                 cropper.destroy();
                 cropper = null;
@@ -609,24 +609,21 @@
             image.src = src;
             modal.classList.add('active');
             
-            // キャッシュ対策：画像がすでに読み込まれているかチェック
-            const initCropper = () => {
+            // モーダルの表示（DOMへの反映）を待つために、わずかな遅延を入れる
+            setTimeout(() => {
                 cropper = new Cropper(image, {
-                    aspectRatio: 24 / 30, // 30mm x 24mm 比率
+                    aspectRatio: 24 / 30,
                     viewMode: 1,
                     dragMode: 'move',
                     autoCropArea: 0.8,
-                    background: false, // 背景のチェッカー模様を消す
+                    // コンテナサイズを明示的に再計算させる
+                    ready: function () {
+                        console.log("Cropper Ready");
+                    }
                 });
-            };
-
-            if (image.complete) {
-                initCropper();
-            } else {
-                image.onload = initCropper;
-            }
+            }, 100); 
         };
-
+        
         document.getElementById('btn-crop-save').onclick = async () => {
             if (!cropper) return;
             const canvas = cropper.getCroppedCanvas({ width: 240, height: 300 });
