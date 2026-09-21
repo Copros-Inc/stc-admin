@@ -200,31 +200,51 @@
             const hasPhoto = !!photoSrc; 
             const isFull = (r.mode === 'full');
             
-            const editRow = (label, field, val) => `
-                <div class="mb-4 border-b border-white/5 pb-1 text-left">
-                    <span class="block text-[9px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">${label}</span>
-                    <input type="text" id="edit-${field}" value="${val || ''}" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300">
-                </div>`;
+            // モード判定バッジの生成
+            const modeBadge = r.status === 'waiting' 
+                ? `<span class="bg-red-500/20 text-red-500 border border-red-500/30 px-4 py-1 rounded-full text-[10px] font-black italic uppercase tracking-widest">キャンセル待ち</span>`
+                : (r.mode === 'full' 
+                    ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-1 rounded-full text-[10px] font-black italic uppercase tracking-widest">本申込済</span>`
+                    : `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-4 py-1 rounded-full text-[10px] font-black italic uppercase tracking-widest">仮予約中</span>`);
 
             body.innerHTML = `
-                <!-- 左側：写真と編集 -->
-                <div class="${(isFull || hasPhoto) ? 'md:col-span-1' : 'md:col-span-3'} space-y-6">
-                    <div class="flex gap-2 w-full">
-                        <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="flex-1 bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition">
-                            ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
-                        </button>
-                        <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="flex-1 bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-3 py-3 rounded-xl font-black text-[9px] transition">
-                            ${r.docStatus === 'complete' ? '📄 書類完了' : '📝 書類未済'}
-                        </button>
+                <!-- 最上部：ステータスバッジ -->
+                <div class="md:col-span-3 mb-2 flex items-center gap-4">
+                    ${modeBadge}
+                    <div class="h-[1px] flex-1 bg-white/10"></div>
+                </div>
+
+                <!-- 左側：写真とステータス -->
+                <div class="md:col-span-1 space-y-6 text-left">
+                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center flex flex-col items-center justify-center shadow-inner font-sans">
+                        <div class="w-full mb-4">
+                            ${photoSrc 
+                                ? `<img src="${photoSrc}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10 cursor-pointer hover:opacity-80 transition" onclick="window.openCropper('${r.id}', '${photoSrc}')" title="クリックしてトリミング">` 
+                                : '<div class="py-20 text-slate-600 italic text-[10px] border-2 border-dashed border-white/5 rounded-2xl w-full flex flex-col items-center justify-center gap-2"><i class="fas fa-camera text-2xl opacity-20"></i>写真は未送付</div>'}
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 w-full mt-2">
+                            <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-2 py-3 rounded-xl font-black text-[9px] transition">
+                                ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
+                            </button>
+                            <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-2 py-3 rounded-xl font-black text-[9px] transition">
+                                ${r.docStatus === 'complete' ? '📄 書類完了' : '📝 書類未済'}
+                            </button>
+                        </div>
                     </div>
-                    <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center min-h-[150px] flex items-center justify-center">
-                        ${photoSrc 
-                            ? `<img src="${photoSrc}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10 cursor-pointer hover:opacity-80" onclick="window.openCropper('${r.id}', '${photoSrc}')" title="クリックしてトリミング">` 
-                            : '<p class="text-slate-600 italic text-xs">写真は未送付です</p>'}
+                    <div class="bg-sky-500/5 p-6 rounded-[2rem] border border-sky-500/10 text-left font-sans">
+                        <p class="text-sky-500 font-black italic text-[9px] uppercase mb-2 tracking-widest">Course Info</p>
+                        <p class="text-white font-bold text-xs leading-relaxed">${r.courseName}<br><span class="text-sky-300/60 font-en text-[10px]">${r.courseDate}</span></p>
                     </div>
-                    <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 shadow-inner">
-                        <h3 class="text-sky-500 font-black italic text-[10px] mb-6 border-b border-sky-500/20 pb-2 uppercase flex items-center"><i class="fas fa-edit mr-2"></i> Edit Application Details</h3>
-                        <div class="grid md:grid-cols-2 gap-x-6 gap-y-1">
+                </div>
+
+                <!-- 右側：編集フォーム -->
+                <div class="md:col-span-2">
+                    <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+                        <h3 class="text-sky-500 font-black italic text-sm mb-6 border-b border-sky-500/20 pb-2 uppercase flex items-center justify-between font-sans">
+                            <span><i class="fas fa-edit mr-2"></i> Application Details</span>
+                            <span class="text-[10px] text-slate-500 font-en font-bold">${r.id}</span>
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-x-8 gap-y-2">
                             ${editRow("受付番号", "regNo", r.regNo)}
                             ${editRow("氏名（漢字）", "userName", r.userName)}
                             ${editRow("フリガナ", "userKana", r.userKana)}
@@ -234,115 +254,38 @@
                             ${editRow("メールアドレス", "email", r.email)}
                             ${editRow("現住所（〒）", "zip", r.zip)}
                             <div class="md:col-span-2">${editRow("現住所（県・市・番地）", "address", r.address)}</div>
-                            <div class="md:col-span-2 border-t border-white/5 my-4 pt-2 text-sky-600 text-[8px] font-black uppercase italic">Employment & Receipt</div>
+                            <div class="md:col-span-2 border-t border-white/5 my-4 pt-2 text-sky-600 text-[10px] font-black uppercase italic tracking-widest font-sans">Employment & Receipt</div>
                             ${editRow("会社名", "company", r.company)}
                             ${editRow("会社電話", "compPhone", r.compPhone)}
                             ${editRow("会社住所（〒）", "compZip", r.compZip)}
                             ${editRow("会社住所（住所）", "compAddress", r.compAddress)}
                             ${editRow("助成金利用", "subsidy", r.subsidy)}
                             ${editRow("領収書宛名", "receiptName", r.receiptName)}
-                            <div class="md:col-span-2 border-t border-white/5 my-4 pt-2 text-sky-600 text-[8px] font-black uppercase italic">Qualification / Exemptions</div>
+                            <div class="md:col-span-2 border-t border-white/5 my-4 pt-2 text-sky-600 text-[10px] font-black uppercase italic tracking-widest font-sans">Qualification / Exemptions</div>
                             ${editRow("免除区分", "exType", r.exType)}
                             ${editRow("修了証/免許番号", "exNo", r.exNoA || r.exNo || r.licNo)}
                             ${editRow("交付機関/取得日", "exInfo", r.exOrgA || r.exDateA || r.exDateB)}
                         </div>
-                        <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-8 bg-sky-600 text-white py-4 rounded-xl font-black italic uppercase transition hover:bg-sky-500 text-[11px] shadow-lg shadow-sky-600/20">保存する</button>
+                        <button onclick="window.saveReservationEdit('${r.id}')" class="w-full mt-8 bg-sky-600 hover:bg-sky-500 text-white py-4 rounded-2xl font-black italic uppercase transition text-sm shadow-xl shadow-sky-600/20 flex items-center justify-center gap-2 font-sans">
+                            <i class="fas fa-save"></i> 編集内容を保存する
+                        </button>
                     </div>
                 </div>
-                <!-- 右側：プレビューエリア -->
-                <div class="md:col-span-2">
-                    <h3 class="text-sky-500 font-black italic text-sm mb-4 uppercase">Document Live Preview</h3>
-                    <div class="preview-container">
-                        <div id="print-preview-content" class="preview-frame">
-                            ${(() => {
-                                const cName = r.courseName || "";
-                                if (cName.includes("玉掛け")) {
-                                    const applyYear = new Date().getFullYear() - 2018;
-                                    const todayStr = "R " + applyYear + "年 " + (new Date().getMonth()+1) + "月 " + new Date().getDate() + "日";
-                                    
-                                    return `
-                                        <div class="p-4 bg-white text-black min-h-full font-serif border border-gray-300 shadow-sm text-[9px] leading-tight">
-                                            <div class="flex justify-between items-start mb-1">
-                                                <div class="text-[7px]">様式４</div>
-                                                <div class="text-center flex-1">
-                                                    <div class="font-bold text-[12px] underline">受講申込書（A）</div>
-                                                    <div class="font-bold text-[10px]">玉掛け技能講習 19時間コース</div>
-                                                </div>
-                                                <div class="text-[7px]">2026.7</div>
-                                            </div>
-                                            
-                                            <table class="w-full border-collapse border border-black mb-2">
-                                                <tr>
-                                                    <td class="border border-black p-1 bg-gray-100 w-[50px]">フリガナ</td>
-                                                    <td class="border border-black p-1 font-bold text-blue-800 bg-yellow-50" colspan="2">${r.userKana || ''}</td>
-                                                    <td class="border border-black p-1 text-[7px]" rowspan="2">記入日：<br>${todayStr}</td>
-                                                    <td class="border border-black p-1 text-center align-middle w-[70px]" rowspan="4">
-                                                        ${photoSrc ? `<img src="${photoSrc}" class="w-[55px] h-[70px] object-cover mx-auto">` : '<div class="text-[7px] text-gray-400">証明写真<br>(30x24)</div>'}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="border border-black p-1 bg-gray-100">氏名</td>
-                                                    <td class="border border-black p-1 font-bold text-[13px] text-blue-800 bg-yellow-50" colspan="2">${r.userName}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="border border-black p-1 bg-gray-100">誕生日</td>
-                                                    <td class="border border-black p-1 font-bold text-blue-800 bg-yellow-50">${window.toJpDate(r.birthDate)}</td>
-                                                    <td class="border border-black p-1 bg-gray-100 w-[50px]">受講日</td>
-                                                    <td class="border border-black p-1 text-[7px] font-bold text-blue-800 bg-yellow-50">${r.courseDate || ''}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="border border-black p-1 bg-gray-100" rowspan="2">住所</td>
-                                                    <td class="border border-black p-1 text-[7px]" colspan="3">〒 ${r.zip || ''}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="border border-black p-1 font-bold text-blue-800 bg-yellow-50" colspan="3">${r.address || ''}</td>
-                                                    <td class="border border-black p-1 bg-gray-100 text-[7px] text-center">電話番号等</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="border border-black p-1 bg-gray-100">電話</td>
-                                                    <td class="border border-black p-1 font-bold text-blue-800 bg-yellow-50" colspan="3">${r.phone || ''}</td>
-                                                    <td class="border border-black p-1 text-[6px] text-center italic">※連絡がとれる番号</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="border border-black p-1 bg-gray-100" rowspan="2">勤務先</td>
-                                                    <td class="border border-black p-1 text-[7px]" colspan="2">〒 ${r.compZip || ''}</td>
-                                                    <td class="border border-black p-1 bg-gray-100 w-[50px]">会社名</td>
-                                                    <td class="border border-black p-1 font-bold text-blue-800 bg-yellow-50">${r.company || ''}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="border border-black p-1 font-bold text-blue-800 bg-yellow-50" colspan="4">${r.compAddress || ''}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="border border-black p-1 bg-gray-100">電話</td>
-                                                    <td class="border border-black p-1 font-bold text-blue-800 bg-yellow-50" colspan="2">${r.compPhone || ''}</td>
-                                                    <td class="border border-black p-1 bg-gray-100">FAX</td>
-                                                    <td class="border border-black p-1 bg-yellow-50" colspan="2"></td>
-                                                </tr>
-                                            </table>
-                                            <div class="border-2 border-double border-black p-1 mb-1 flex justify-between items-center bg-gray-50">
-                                                <div class="pl-2">
-                                                    <div class="font-bold text-[11px]">受講料：￥25,000-</div>
-                                                    <div class="text-[7px]">(テキスト代1,800円税込)</div>
-                                                </div>
-                                                <div class="text-[7px] pr-2 text-right">振込先：山口銀行 長府支店(普通) 5076778<br>口座名：株式会社 コプロス</div>
-                                            </div>
-                                                <div class="text-[6px] text-red-600 font-bold italic text-center">※Excel出力時に正式な書式へ整形されます</div>
-                                        </div>`;
-                                } else {
-                                    return `<div class="h-full flex flex-col items-center justify-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 p-10 text-slate-500 italic">${cName}<br>専用プレビュー準備中</div>`;
-                                }
-                            })()}
-                        </div>
-                    </div>
-                </div>
-                <!-- 下部ボタン -->
-                <div class="mt-12 flex flex-wrap gap-6 pt-10 border-t border-white/5">
-                    <button id="btn-accept-final" class="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-5 rounded-2xl font-[900] italic shadow-lg transition text-lg">受付を確定する</button>
-                    <button onclick="window.downloadExcel('${r.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-5 rounded-2xl font-[900] italic shadow-lg transition text-lg">
-                        <i class="fas fa-file-excel mr-2"></i> 正式申込書 (Excel) を出力
+
+                <!-- 下部：アクションボタン（横並び） -->
+                <div class="md:col-span-3 mt-8 flex flex-wrap items-center justify-start gap-4 p-6 bg-white/5 rounded-3xl border border-white/5 font-sans">
+                    <button id="btn-accept-final" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-xl font-black italic shadow-lg transition text-sm flex-1 min-w-[150px]">
+                        受付を確定
+                    </button>
+                    <button onclick="window.downloadExcel('${r.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-xl font-black italic shadow-lg transition text-sm flex-1 min-w-[150px] flex items-center justify-center gap-2">
+                        <i class="fas fa-file-excel"></i> 正式申込書(Excel)
                     </button> 
-                    <button onclick="closeModal()" class="bg-slate-700 text-white px-10 py-5 rounded-2xl font-[900] italic text-lg">閉じる</button>
-                    <button id="btn-delete-final" class="bg-red-900/50 text-red-400 px-8 py-5 rounded-2xl font-[900] italic text-sm ml-auto">削除</button>
+                    <button onclick="closeModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-xl font-black italic transition text-sm flex-1 min-w-[150px]">
+                        閉じる
+                    </button>
+                    <button id="btn-delete-final" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 px-6 py-4 rounded-xl font-black italic text-[11px] transition ml-auto">
+                        削除
+                    </button>
                 </div>`;
 
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
