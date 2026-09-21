@@ -55,8 +55,9 @@
 
     <style>
         /* トリミングモーダル用スタイル */
-        .cropper-container { max-height: 500px; width: 100%; background: #000; }
+        .cropper-container { max-height: 500px; width: 100%; background: #000; overflow: hidden; position: relative; }
         .crop-modal-content { background: #0f172a; border: 2px solid #00a2ff; border-radius: 2rem; padding: 30px; width: 90%; max-width: 600px; }
+        #cropper-image { display: block; max-width: 100%; }
     </style>
 </head>
 <body>
@@ -600,7 +601,7 @@
             const modal = document.getElementById('crop-modal');
             const image = document.getElementById('cropper-image');
             
-            // 初期化
+            // 以前のインスタンスがあれば確実に破棄
             if (cropper) {
                 cropper.destroy();
                 cropper = null;
@@ -609,19 +610,23 @@
             image.src = src;
             modal.classList.add('active');
             
-            // モーダルの表示（DOMへの反映）を待つために、わずかな遅延を入れる
+            // モーダルが完全に表示されてから初期化
             setTimeout(() => {
-                cropper = new Cropper(image, {
-                    aspectRatio: 24 / 30,
-                    viewMode: 1,
-                    dragMode: 'move',
-                    autoCropArea: 0.8,
-                    // コンテナサイズを明示的に再計算させる
-                    ready: function () {
-                        console.log("Cropper Ready");
-                    }
-                });
-            }, 100); 
+                if (typeof window.Cropper !== 'undefined') {
+                    cropper = new window.Cropper(image, {
+                        aspectRatio: 24 / 30, // 30mm x 24mm 比率
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 0.8,
+                        checkOrientation: false,
+                        ready: function() {
+                            console.log("Cropper is ready");
+                        }
+                    });
+                } else {
+                    alert("ライブラリの読み込みに失敗しています。再読み込みしてください。");
+                }
+            }, 200); 
         };
         
         document.getElementById('btn-crop-save').onclick = async () => {
