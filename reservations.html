@@ -140,7 +140,7 @@
         function updateDashboard() {
             const today = new Date().toLocaleDateString();
             document.getElementById('stat-today').innerText = reservations.filter(r => r.createdAt?.toDate().toLocaleDateString() === today).length;
-            const unread = reservations.filter(r => r.status === 'new').length;
+            const unread = reservations.filter(r => !r.mailStatus).length;
             document.getElementById('stat-new').innerText = unread;
             document.getElementById('stat-wait').innerText = reservations.filter(r => r.status === 'waiting').length;
             document.getElementById('stat-total').innerText = reservations.length;
@@ -595,28 +595,48 @@
         let cropper = null;
         let currentEditingId = null;
 
-        window.openCropper = (id, src) => {
+             window.openCropper = (id, src) => {
             currentEditingId = id;
             const modal = document.getElementById('crop-modal');
             const image = document.getElementById('cropper-image');
             image.src = src;
             modal.classList.add('active');
+            
             if (cropper) cropper.destroy();
-            cropper = new Cropper(image, {
-                aspectRatio: 24 / 30, // 縦30mm x 横24mm比率
-                viewMode: 1,
-                autoCropArea: 1
-            });
+            
+            // 画像の読み込み完了を待ってからCropperを起動
+            image.onload = () => {
+                cropper = new Cropper(image, {
+                    aspectRatio: 24 / 30,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 0.8,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                });
+            };
         };
 
         document.getElementById('btn-crop-save').onclick = async () => {
+            if (!cropper) return;
             const canvas = cropper.getCroppedCanvas({ width: 240, height: 300 });
             const croppedBase64 = canvas.toDataURL('image/jpeg');
             try {
-                await updateDoc(doc(db, "reservations", currentEditingId), { userPhotoBase64: croppedBase64 });
-                alert("写真を更新しました！");
+                const btn = document.getElementById('btn-crop-save');
+                btn.innerText = "保存中...";
+                await updateDoc(doc(db, "reservations", currentEditingId), { 
+                    userPhotoBase64: croppedBase64 
+                });
+                alert("写真を30mm×24mm比率で更新しました！");
                 document.getElementById('crop-modal').classList.remove('active');
-                window.closeModal(); // 詳細画面を一度閉じて反映
+                btn.innerText = "切り抜き適用";
+                // 詳細モーダル内の画像も差し替える
+                window.closeModal(); 
             } catch (e) { alert("写真保存失敗: " + e.message); }
         };
 
