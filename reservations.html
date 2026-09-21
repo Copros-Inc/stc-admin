@@ -48,9 +48,12 @@
 }
 .preview-container { height: 700px; position: relative; }
 
-    <!-- Cropper.js CSS / ExcelJS Library -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <style>
+        /* 新しいトリミング画面のスタイル */
+        .crop-v-container { position: relative; width: 300px; height: 375px; margin: 0 auto; overflow: hidden; background: #000; border: 2px solid #00a2ff; border-radius: 10px; cursor: move; }
+        #crop-v-image { position: absolute; top: 0; left: 0; transform-origin: top left; user-select: none; }
+        .crop-v-overlay { position: absolute; inset: 0; border: 20px solid rgba(0,0,0,0.5); pointer-events: none; }
+    </style>
 
     <style>
         /* トリミングモーダル用スタイル */
@@ -593,57 +596,70 @@
             return `${prefix}${gengo}${yStr}年${month}月${day}日`;
         };
 
-        // --- 写真トリミング機能 (Cropper.js) ---
-        let cropper = null;
-        let currentEditingId = null;
+   
+        let cropData = { x: 0, y: 0, zoom: 1, isDragging: false, startX: 0, startY: 0 };
 
         window.openCropper = (id, src) => {
             currentEditingId = id;
-            const modal = document.getElementById('crop-modal');
-            const image = document.getElementById('cropper-image');
-            
-            if (cropper) {
-                cropper.destroy();
-                cropper = null;
-            }
-
-            image.src = src;
-            modal.classList.add('active');
-            
-            setTimeout(() => {
-                const CropperClass = window.Cropper || (typeof Cropper !== 'undefined' ? Cropper : null);
-                if (CropperClass) {
-                    cropper = new CropperClass(image, {
-                        aspectRatio: 24 / 30,
-                        viewMode: 1, // 画像の外に枠を出さない
-                        autoCropArea: 0.8,
-                        responsive: true,
-                        restore: false,
-                        ready: function () {
-                            // 枠が表示されない問題を解決するためリサイズを強制
-                            this.cropper.crop(); 
-                        }
-                    });
-                }
-            }, 400); // 待ち時間を少し長めの400msに
+            const img = document.getElementById('crop-v-image');
+            const zoom = document.getElementById('crop-v-zoom');
+            img.src = src;
+            cropData.x = 0; cropData.y = 0; cropData.zoom = 1;
+            zoom.value = 1;
+            img.style.transform = `translate(0px, 0px) scale(1)`;
+            document.getElementById('crop-modal').classList.add('active');
         };
-        
-        document.getElementById('btn-crop-save').onclick = async () => {
-            if (!cropper) return;
-            const canvas = cropper.getCroppedCanvas({ width: 240, height: 300 });
-            const croppedBase64 = canvas.toDataURL('image/jpeg');
+
+        const cropImg = document.getElementById('crop-v-image');
+        const cropArea = document.getElementById('crop-v-area');
+
+        // ドラッグ移動処理
+        cropArea.onmousedown = (e) => { 
+            cropData.isDragging = true; 
+            cropData.startX = e.clientX - cropData.x; 
+            cropData.startY = e.clientY - cropData.y; 
+        };
+        window.onmousemove = (e) => {
+            if (!cropData.isDragging) return;
+            cropData.x = e.clientX - cropData.startX;
+            cropData.y = e.clientY - cropData.startY;
+            cropImg.style.transform = `translate(${cropData.x}px, ${cropData.y}px) scale(${cropData.zoom})`;
+        };
+        window.onmouseup = () => { cropData.isDragging = false; };
+
+        // ズーム処理
+        document.getElementById('crop-v-zoom').oninput = (e) => {
+            cropData.zoom = e.target.value;
+            cropImg.style.transform = `translate(${cropData.x}px, ${cropData.y}px) scale(${cropData.zoom})`;
+        };
+
+        // 切り抜き実行（Canvas使用）
+        document.getElementById('btn-crop-v-save').onclick = async () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 240; canvas.height = 300; // 30mm x 24mm比率
+            const ctx = canvas.getContext('2d');
+            
+            // 描画倍率の計算
+            const ratio = 240 / 300; 
+            const drawWidth = cropImg.naturalWidth * cropData.zoom * (240 / 300);
+            const drawHeight = cropImg.naturalHeight * cropData.zoom * (240 / 300);
+
+            // Canvasに今の見え方を描画
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, 240, 300);
+            ctx.drawImage(cropImg, 
+                cropData.x * (240 / 300), cropData.y * (240 / 300), 
+                cropImg.naturalWidth * cropData.zoom * (240 / 300), 
+                cropImg.naturalHeight * cropData.zoom * (240 / 300)
+            );
+
+            const croppedBase64 = canvas.toDataURL('image/jpeg', 0.8);
             try {
-                const btn = document.getElementById('btn-crop-save');
-                btn.innerText = "保存中...";
-                await updateDoc(doc(db, "reservations", currentEditingId), { 
-                    userPhotoBase64: croppedBase64 
-                });
-                alert("写真を30mm×24mm比率で更新しました！");
+                await updateDoc(doc(db, "reservations", currentEditingId), { userPhotoBase64: croppedBase64 });
+                alert("写真を保存しました！");
                 document.getElementById('crop-modal').classList.remove('active');
-                btn.innerText = "切り抜き適用";
-                // 詳細モーダル内の画像も差し替える
-                window.closeModal(); 
-            } catch (e) { alert("写真保存失敗: " + e.message); }
+                window.closeModal();
+            } catch (e) { alert("保存失敗: " + e.message); }
         };
 
         // --- ExcelJS出力機能 ---
@@ -718,16 +734,23 @@
             }
         };       
     </script>
-        <!-- 写真トリミング用モーダル -->
     <div id="crop-modal" class="modal-overlay">
-        <div class="crop-modal-content">
-            <h3 class="text-sky-400 font-black italic mb-4">PHOTO TRIMMING (30mm x 24mm)</h3>
-            <div class="cropper-container">
-                <img id="cropper-image" src="" style="max-width: 100%;">
+        <div class="crop-modal-content text-center">
+            <h3 class="text-sky-400 font-black italic mb-4 uppercase tracking-widest">Adjust Photo (30:24)</h3>
+            <p class="text-[10px] text-slate-400 mb-4">ドラッグで位置調整 / 下のバーで拡大縮小</p>
+            
+            <div class="crop-v-container" id="crop-v-area">
+                <img id="crop-v-image" src="">
+                <div class="crop-v-overlay"></div>
             </div>
-            <div class="mt-6 flex gap-4">
-                <button id="btn-crop-save" class="flex-1 bg-sky-600 text-white py-3 rounded-xl font-black italic">切り抜き適用</button>
-                <button onclick="document.getElementById('crop-modal').classList.remove('active')" class="flex-1 bg-slate-700 text-white py-3 rounded-xl font-black italic">キャンセル</button>
+
+            <div class="mt-6 px-4">
+                <input type="range" id="crop-v-zoom" min="0.1" max="3" step="0.01" value="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+            </div>
+
+            <div class="mt-8 flex gap-4">
+                <button id="btn-crop-v-save" class="flex-1 bg-sky-600 text-white py-4 rounded-xl font-black italic shadow-lg shadow-sky-600/20">保存する</button>
+                <button onclick="document.getElementById('crop-modal').classList.remove('active')" class="flex-1 bg-slate-800 text-slate-400 py-4 rounded-xl font-black italic">キャンセル</button>
             </div>
         </div>
     </div>
