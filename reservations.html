@@ -50,7 +50,7 @@
 
     <!-- Cropper.js CSS / ExcelJS Library -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
     <style>
         /* トリミングモーダル用スタイル */
@@ -113,7 +113,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import Cropper from "https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.esm.min.js";
         
         const firebaseConfig = { 
             apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", 
@@ -609,16 +608,23 @@
             image.src = src;
             modal.classList.add('active');
             
+            // 200ミリ秒待機し、かつ読み込み完了を確認してから初期化
             setTimeout(() => {
-                // importしたCropperを直接使用
-                cropper = new Cropper(image, {
-                    aspectRatio: 24 / 30,
-                    viewMode: 1,
-                    dragMode: 'move',
-                    autoCropArea: 0.8,
-                    checkOrientation: false
-                });
-            }, 200); 
+                try {
+                    const CropperClass = window.Cropper || (typeof Cropper !== 'undefined' ? Cropper : null);
+                    if (CropperClass) {
+                        cropper = new CropperClass(image, {
+                            aspectRatio: 24 / 30,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 0.8,
+                            checkOrientation: false
+                        });
+                    }
+                } catch (e) {
+                    console.error("Cropper init failed:", e);
+                }
+            }, 300); 
         };
         
         document.getElementById('btn-crop-save').onclick = async () => {
