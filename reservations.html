@@ -260,7 +260,7 @@ ${photoSrc
                     </div>
                 </div>
 
-                <!-- 右側：プレビューエリア（コース別出し分け） -->
+                <!-- 右側：プレビューエリア -->
                 <div class="md:col-span-2">
                     <h3 class="text-sky-500 font-black italic text-sm mb-4 uppercase italic">Document Live Preview</h3>
                     <div class="preview-container">
@@ -271,28 +271,25 @@ ${photoSrc
                                     return `
                                         <div class="p-8 bg-white text-black min-h-full font-serif border-2 border-black">
                                             <div class="text-center font-bold text-xl mb-4 underline">受講申込書 プレビュー（玉掛け）</div>
-                                            <div class="grid grid-cols-4 border-2 border-black text-xs text-left">
-                                                <div class="border-b border-r border-black p-2 bg-gray-200">氏名</div>
-                                                <div class="border-b border-r border-black p-2 col-span-2 font-bold text-lg">${r.userName}</div>
-                                                <div class="border-b border-black p-2 row-span-3 flex items-center justify-center">
-                                                    ${photoSrc ? `<img src="${photoSrc}" style="max-height:100px;">` : '写真なし'}
+                                            <div class="grid grid-cols-4 border-2 border-black text-[10px] text-left">
+                                                <div class="border-b border-r border-black p-1 bg-gray-200">氏名</div>
+                                                <div class="border-b border-r border-black p-1 col-span-2 font-bold text-sm">${r.userName || ''}</div>
+                                                <div class="border-b border-black p-1 row-span-3 flex items-center justify-center">
+                                                    ${photoSrc ? `<img src="${photoSrc}" style="max-height:80px;">` : '写真なし'}
                                                 </div>
-                                                <div class="border-b border-r border-black p-2 bg-gray-200">フリガナ</div>
-                                                <div class="border-b border-r border-black p-2 col-span-2">${r.userKana}</div>
-                                                <div class="border-b border-r border-black p-2 bg-gray-100">生年月日</div>
-                                                <div class="border-b border-r border-black p-2 col-span-2">${window.toJpDate(r.birthDate)}</div>
-                                                <div class="border-b border-r border-black p-2 bg-gray-200">住所</div>
-                                                <div class="border-b border-black p-2 col-span-3 font-bold text-left">${r.address}</div>
-                                                <div class="border-r border-black p-2 bg-gray-200">電話</div>
-                                                <div class="p-2 col-span-3 font-bold">${r.phone}</div>
+                                                <div class="border-b border-r border-black p-1 bg-gray-200">フリガナ</div>
+                                                <div class="border-b border-r border-black p-1 col-span-2">${r.userKana || ''}</div>
+                                                <div class="border-b border-r border-black p-1 bg-gray-100">生年月日</div>
+                                                <div class="border-b border-r border-black p-1 col-span-2">${window.toJpDate(r.birthDate)}</div>
+                                                <div class="border-b border-r border-black p-1 bg-gray-200">住所</div>
+                                                <div class="border-b border-black p-1 col-span-3 font-bold text-left">${r.address || ''}</div>
+                                                <div class="border-r border-black p-1 bg-gray-200">電話</div>
+                                                <div class="p-1 col-span-3 font-bold">${r.phone || ''}</div>
                                             </div>
-                                            <div class="mt-4 text-[9px] text-red-600 font-bold">※Excel出力時に「tamakake.xlsx」のフォーマットに自動整形されます。</div>
+                                            <div class="mt-4 text-[9px] text-red-600 font-bold">※Excel出力時に「tamakake.xlsx」の形式に整形されます。</div>
                                         </div>`;
                                 } else {
-                                    return `
-                                        <div class="h-full flex flex-col items-center justify-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 p-10 text-slate-500 italic">
-                                            ${cName}<br>専用プレビュー準備中
-                                        </div>`;
+                                    return `<div class="h-full flex flex-col items-center justify-center bg-white/5 rounded-[3rem] border border-dashed border-white/10 p-10 text-slate-500 italic">${cName}<br>専用プレビュー準備中</div>`;
                                 }
                             })()}
                         </div>
@@ -312,7 +309,7 @@ ${photoSrc
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
             document.getElementById('btn-delete-final').onclick = () => window.deleteRes(r.id);
             document.getElementById('modal-overlay').classList.add('active');
-        }; // ← この閉じカッコが重要です
+        };
         
         window.processAction = async (id, status, r) => {
             if(!confirm(`ステータスを更新しますか？`)) return;
