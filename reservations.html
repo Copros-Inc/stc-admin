@@ -48,9 +48,8 @@
 }
 .preview-container { height: 700px; position: relative; }
 
-    <!-- Cropper.js / ExcelJS Libraries -->
+    <!-- Cropper.js CSS / ExcelJS Library -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 
     <style>
@@ -114,6 +113,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import Cropper from "https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.esm.min.js";
         
         const firebaseConfig = { 
             apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", 
@@ -601,7 +601,6 @@
             const modal = document.getElementById('crop-modal');
             const image = document.getElementById('cropper-image');
             
-            // 以前のインスタンスがあれば確実に破棄
             if (cropper) {
                 cropper.destroy();
                 cropper = null;
@@ -610,22 +609,15 @@
             image.src = src;
             modal.classList.add('active');
             
-            // モーダルが完全に表示されてから初期化
             setTimeout(() => {
-                if (typeof window.Cropper !== 'undefined') {
-                    cropper = new window.Cropper(image, {
-                        aspectRatio: 24 / 30, // 30mm x 24mm 比率
-                        viewMode: 1,
-                        dragMode: 'move',
-                        autoCropArea: 0.8,
-                        checkOrientation: false,
-                        ready: function() {
-                            console.log("Cropper is ready");
-                        }
-                    });
-                } else {
-                    alert("ライブラリの読み込みに失敗しています。再読み込みしてください。");
-                }
+                // importしたCropperを直接使用
+                cropper = new Cropper(image, {
+                    aspectRatio: 24 / 30,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 0.8,
+                    checkOrientation: false
+                });
             }, 200); 
         };
         
