@@ -201,30 +201,34 @@
                     return;
                 }
 
-                // ★ 修正：表示されている見た目をそのままCanvasに描画
-                // cropData.x, y は画面上のピクセル → そのまま使う
-                const displayScale = cropData.zoom; // ズーム値
+                // ★ 表示エリアとCanvas間のスケール計算
+                const displayContainerWidth = 320;
+                const displayContainerHeight = 400;
+                const canvasWidth = 240;
+                const canvasHeight = 300;
                 
-                // Canvas上での描画位置・サイズ
-                // ★ マイナス値を考慮した調整
-                const canvasDrawX = cropData.x;
-                const canvasDrawY = cropData.y;
-                const canvasDrawWidth = cropImg.naturalWidth * displayScale;
-                const canvasDrawHeight = cropImg.naturalHeight * displayScale;
+                const scaleX = canvasWidth / displayContainerWidth;
+                const scaleY = canvasHeight / displayContainerHeight;
+
+                // ★ 座標を正確に変換
+                const adjustedX = cropData.x * scaleX;
+                const adjustedY = cropData.y * scaleY;
+                const adjustedWidth = cropImg.naturalWidth * cropData.zoom * scaleX;
+                const adjustedHeight = cropImg.naturalHeight * cropData.zoom * scaleY;
 
                 // ★ クリッピング領域を設定（枠外は描画しない）
                 ctx.save();
                 ctx.beginPath();
-                ctx.rect(0, 0, 240, 300);
+                ctx.rect(0, 0, canvasWidth, canvasHeight);
                 ctx.clip();
 
-                // ★ 画像を描画
+                // ★ 調整した座標で画像を描画
                 ctx.drawImage(
                     cropImg,
-                    canvasDrawX,
-                    canvasDrawY,
-                    canvasDrawWidth,
-                    canvasDrawHeight
+                    adjustedX,
+                    adjustedY,
+                    adjustedWidth,
+                    adjustedHeight
                 );
 
                 ctx.restore();
