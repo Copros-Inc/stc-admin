@@ -229,7 +229,7 @@
                     <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center flex flex-col items-center justify-center shadow-inner">
                         <div class="w-full mb-4">
                             ${photoSrc 
-                                    ? `<img src="${photoSrc}" id="target-photo-${r.id}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10 cursor-pointer hover:opacity-80 transition" onclick="window.openCropper('${r.id}')" title="クリックしてトリミング">`  
+                                ? `<img src="${photoSrc}" id="target-photo-${r.id}" class="photo-click-target w-full rounded-2xl shadow-2xl border-2 border-white/10 cursor-pointer hover:opacity-80 transition" title="クリックしてトリミング">` 
                                 : '<div class="py-20 text-slate-600 italic text-[10px] border-2 border-dashed border-white/5 rounded-2xl w-full flex flex-col items-center justify-center gap-2"><i class="fas fa-camera text-2xl opacity-20"></i>写真は未送付</div>'}
                         </div>
                         <div class="grid grid-cols-2 gap-2 w-full mt-2">
@@ -292,6 +292,13 @@
 
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
             document.getElementById('btn-delete-final').onclick = () => window.deleteRes(r.id);
+            
+            // ★ここに追加
+            const photoEl = document.getElementById('target-photo-' + id);
+            if(photoEl) {
+                photoEl.onclick = () => window.openCropper(id);
+            }
+
             document.getElementById('modal-overlay').classList.add('active');
         };
         
