@@ -784,11 +784,11 @@
             img.style.transform = `translate(0px, 0px) scale(1)`;
             document.getElementById('crop-modal').classList.add('active');
 
-            // ★ イベントリスナー設定
             const cropArea = document.getElementById('crop-v-area');
             
+            // ★ cropData をローカル参照
             cropArea.onmousedown = (e) => { 
-                cropData.isDragging = true; 
+                cropData.isDragging = true;  // ← ここで cropData を参照
                 cropData.startX = e.clientX - cropData.x; 
                 cropData.startY = e.clientY - cropData.y; 
             };
@@ -1023,5 +1023,6 @@
             emailjs.init("9b2XZtU7jPZZPvYFo"); // STC専用キー
         })();
     </script>
+    window.cropData = cropData;
 </body>
 </html>
