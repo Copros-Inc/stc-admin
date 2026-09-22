@@ -754,8 +754,17 @@
    
         let cropData = { x: 0, y: 0, zoom: 1, isDragging: false, startX: 0, startY: 0 };
 
+        signInAnonymously(auth).then(() => {
+            // ★ onSnapshot をここに移動
+            onSnapshot(collection(db, "reservations"), (snap) => {
+                reservations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                updateDashboard();
+                renderTable();
+            });
+        });
+
         window.openCropper = (id) => {
-            currentEditingId = id;  // ★ グローバル変数に保存
+            currentEditingId = id;
             const target = document.getElementById('target-photo-' + id);
             const img = document.getElementById('crop-v-image');
             if (!target || !img) {
@@ -770,59 +779,89 @@
             
             const zoomSlider = document.getElementById('crop-v-zoom');
             zoomSlider.value = 1;
+            document.getElementById('zoom-display').innerText = '1.0x';
             
             img.style.transform = `translate(0px, 0px) scale(1)`;
             document.getElementById('crop-modal').classList.add('active');
-              
-                try {
-                    // ★ トリミングモーダルの枠部分をスクショ
-                    const cropContainer = document.getElementById('crop-v-area');
-                    
-                    if (!cropContainer) {
-                        alert("❌ トリミングエリアが見つかりません");
-                        return;
-                    }
 
-                    // ★ html2canvas でスクショ（240×300で切り取り）
-                    const canvas = await html2canvas(cropContainer, {
-                        width: 320,
-                        height: 400,
-                        backgroundColor: '#ffffff',
-                        scale: 1,
-                        allowTaint: true,
-                        useCORS: true
-                    });
-
-                    // ★ Canvas を 240×300 にリサイズ
-                    const finalCanvas = document.createElement('canvas');
-                    finalCanvas.width = 240;
-                    finalCanvas.height = 300;
-                    const finalCtx = finalCanvas.getContext('2d');
-                    
-                    // スクショ画像を 240×300 に縮小して描画
-                    finalCtx.drawImage(canvas, 0, 0, 320, 400, 0, 0, 240, 300);
-
-                    // Base64 に変換
-                    const croppedBase64 = finalCanvas.toDataURL('image/jpeg', 0.85);
-
-                    // ★ Firestore に保存
-                    await updateDoc(doc(db, "reservations", currentEditingId), { 
-                        userPhotoBase64: croppedBase64 
-                    });
-                    alert("✅ 写真を保存しました！");
-
-                    // ★ 詳細画面の写真を即座に更新
-                    const targetPhoto = document.getElementById('target-photo-' + currentEditingId);
-                    if (targetPhoto) {
-                        targetPhoto.src = croppedBase64;
-                    }
-
-                    document.getElementById('crop-modal').classList.remove('active');
-                } catch (e) {
-                    console.error(e);
-                    alert("❌ 保存失敗: " + e.message);
-                }
+            // ★ イベントリスナー設定
+            const cropArea = document.getElementById('crop-v-area');
+            
+            cropArea.onmousedown = (e) => { 
+                cropData.isDragging = true; 
+                cropData.startX = e.clientX - cropData.x; 
+                cropData.startY = e.clientY - cropData.y; 
             };
+
+            window.onmousemove = (e) => {
+                if (!cropData.isDragging) return;
+                cropData.x = e.clientX - cropData.startX;
+                cropData.y = e.clientY - cropData.startY;
+                img.style.transform = `translate(${cropData.x}px, ${cropData.y}px) scale(${cropData.zoom})`;
+            };
+
+            window.onmouseup = () => { cropData.isDragging = false; };
+
+            document.getElementById('crop-v-zoom').oninput = (e) => {
+                cropData.zoom = parseFloat(e.target.value);
+                document.getElementById('zoom-display').innerText = cropData.zoom.toFixed(1) + 'x';
+                img.style.transform = `translate(${cropData.x}px, ${cropData.y}px) scale(${cropData.zoom})`;
+            };
+
+            document.getElementById('btn-crop-reset').onclick = () => {
+                cropData.x = 0;
+                cropData.y = 0;
+                cropData.zoom = 1;
+                document.getElementById('crop-v-zoom').value = 1;
+                document.getElementById('zoom-display').innerText = '1.0x';
+                img.style.transform = `translate(0px, 0px) scale(1)`;
+            };
+        };
+
+        // ★ 切り抜き実行（html2canvas）
+        document.getElementById('btn-crop-v-save').onclick = async () => {
+            try {
+                const cropContainer = document.getElementById('crop-v-area');
+                
+                if (!cropContainer) {
+                    alert("❌ トリミングエリアが見つかりません");
+                    return;
+                }
+
+                const canvas = await html2canvas(cropContainer, {
+                    width: 320,
+                    height: 400,
+                    backgroundColor: '#ffffff',
+                    scale: 1,
+                    allowTaint: true,
+                    useCORS: true
+                });
+
+                const finalCanvas = document.createElement('canvas');
+                finalCanvas.width = 240;
+                finalCanvas.height = 300;
+                const finalCtx = finalCanvas.getContext('2d');
+                
+                finalCtx.drawImage(canvas, 0, 0, 320, 400, 0, 0, 240, 300);
+
+                const croppedBase64 = finalCanvas.toDataURL('image/jpeg', 0.85);
+
+                await updateDoc(doc(db, "reservations", currentEditingId), { 
+                    userPhotoBase64: croppedBase64 
+                });
+                alert("✅ 写真を保存しました！");
+
+                const targetPhoto = document.getElementById('target-photo-' + currentEditingId);
+                if (targetPhoto) {
+                    targetPhoto.src = croppedBase64;
+                }
+
+                document.getElementById('crop-modal').classList.remove('active');
+            } catch (e) {
+                console.error(e);
+                alert("❌ 保存失敗: " + e.message);
+            }
+        };
 
         // --- ExcelJS出力機能 ---
         window.downloadExcel = async (id) => {
