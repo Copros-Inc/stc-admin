@@ -229,7 +229,7 @@
                     <div class="bg-white/5 p-6 rounded-[2rem] border border-white/10 text-center flex flex-col items-center justify-center shadow-inner">
                         <div class="w-full mb-4">
                             ${photoSrc 
-                                ? `<img src="${photoSrc}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10 cursor-pointer hover:opacity-80 transition" onclick="window.openCropper('${r.id}', '${photoSrc}')" title="クリックしてトリミング">` 
+                                    ? `<img src="${photoSrc}" id="target-photo-${r.id}" class="w-full rounded-2xl shadow-2xl border-2 border-white/10 cursor-pointer hover:opacity-80 transition" onclick="window.openCropper('${r.id}')" title="クリックしてトリミング">`  
                                 : '<div class="py-20 text-slate-600 italic text-[10px] border-2 border-dashed border-white/5 rounded-2xl w-full flex flex-col items-center justify-center gap-2"><i class="fas fa-camera text-2xl opacity-20"></i>写真は未送付</div>'}
                         </div>
                         <div class="grid grid-cols-2 gap-2 w-full mt-2">
@@ -599,11 +599,14 @@
    
         let cropData = { x: 0, y: 0, zoom: 1, isDragging: false, startX: 0, startY: 0 };
 
-        window.openCropper = (id, src) => {
+        window.openCropper = (id) => {
             currentEditingId = id;
+            const target = document.getElementById('target-photo-' + id);
             const img = document.getElementById('crop-v-image');
             const zoom = document.getElementById('crop-v-zoom');
-            img.src = src;
+            if (!target || !img) return;
+
+            img.src = target.src;
             cropData.x = 0; cropData.y = 0; cropData.zoom = 1;
             zoom.value = 1;
             img.style.transform = `translate(0px, 0px) scale(1)`;
