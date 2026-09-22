@@ -772,10 +772,42 @@
             
             img.style.transform = `translate(0px, 0px) scale(1)`;
             document.getElementById('crop-modal').classList.add('active');
+                        const cropArea = document.getElementById('crop-v-area');
+            
+            // ドラッグ移動処理
+            cropArea.onmousedown = (e) => { 
+                cropData.isDragging = true; 
+                cropData.startX = e.clientX - cropData.x; 
+                cropData.startY = e.clientY - cropData.y; 
+            };
+
+            window.onmousemove = (e) => {
+                if (!cropData.isDragging) return;
+                cropData.x = e.clientX - cropData.startX;
+                cropData.y = e.clientY - cropData.startY;
+                img.style.transform = `translate(${cropData.x}px, ${cropData.y}px) scale(${cropData.zoom})`;
+            };
+
+            window.onmouseup = () => { cropData.isDragging = false; };
+
+            // ズーム処理（表示更新付き）
+            document.getElementById('crop-v-zoom').oninput = (e) => {
+                cropData.zoom = parseFloat(e.target.value);
+                document.getElementById('zoom-display').innerText = cropData.zoom.toFixed(1) + 'x';
+                img.style.transform = `translate(${cropData.x}px, ${cropData.y}px) scale(${cropData.zoom})`;
+            };
+
+            // リセットボタン
+            document.getElementById('btn-crop-reset').onclick = () => {
+                cropData.x = 0;
+                cropData.y = 0;
+                cropData.zoom = 1;
+                document.getElementById('crop-v-zoom').value = 1;
+                document.getElementById('zoom-display').innerText = '1.0x';
+                img.style.transform = `translate(0px, 0px) scale(1)`;
+            };
         };
 
-
-            document.getElementById('btn-crop-v-save').onclick = async () => {
                 try {
                     // ★ トリミングモーダルの枠部分をスクショ
                     const cropContainer = document.getElementById('crop-v-area');
