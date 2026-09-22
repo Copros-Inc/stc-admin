@@ -293,12 +293,6 @@
             document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
             document.getElementById('btn-delete-final').onclick = () => window.deleteRes(r.id);
             
-            // ★ここに追加
-            const photoEl = document.getElementById('target-photo-' + id);
-            if(photoEl) {
-                photoEl.onclick = () => window.openCropper(id);
-            }
-
             document.getElementById('modal-overlay').classList.add('active');
         };
         
@@ -764,6 +758,17 @@
             </div>
         </div>
     </div>
+        <script>
+        // 画面全体のクリックを監視し、写真がクリックされたらトリミングを開く
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.id && e.target.id.indexOf('target-photo-') === 0) {
+                const resId = e.target.id.replace('target-photo-', '');
+                if (typeof window.openCropper === 'function') {
+                    window.openCropper(resId);
+                }
+            }
+        });
+    </script>
     <!-- EmailJSのライブラリ読み込み -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script type="text/javascript">
