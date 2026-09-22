@@ -53,6 +53,10 @@
         .crop-v-container { position: relative; width: 300px; height: 375px; margin: 0 auto; overflow: hidden; background: #000; border: 2px solid #00a2ff; border-radius: 10px; cursor: move; }
         #crop-v-image { position: absolute; top: 0; left: 0; transform-origin: top left; user-select: none; }
         .crop-v-overlay { position: absolute; inset: 0; border: 20px solid rgba(0,0,0,0.5); pointer-events: none; }
+    
+        /* 写真アップロード */
+    input[type="file"] { display: none; }
+    input[type="file"]::-webkit-file-upload-button { display: none; }  
     </style>
 
     <style>
@@ -183,29 +187,46 @@
             // 切り抜き実行（Canvas使用）
             document.getElementById('btn-crop-v-save').onclick = async () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = 240; canvas.height = 300; // 30mm x 24mm比率 ← ★ ここ正確
+                canvas.width = 240;
+                canvas.height = 300;
                 const ctx = canvas.getContext('2d');
-                
-                ctx.fillStyle = "#fff";
+
+                // 背景を白で塗りつぶし
+                ctx.fillStyle = "#ffffff";
                 ctx.fillRect(0, 0, 240, 300);
+
+                // ★ 画像がちゃんと読み込まれているか確認
+                if (!cropImg.src || cropImg.naturalWidth === 0) {
+                    alert("❌ 写真がまだ読み込まれていません。もう一度お試しください。");
+                    return;
+                }
+
+                // ★ 修正：表示されている見た目をそのままCanvasに描画
+                // cropData.x, y は画面上のピクセル → そのまま使う
+                const displayScale = cropData.zoom; // ズーム値
                 
-                // 画像をキャンバス中央に配置（自動補正）
-                const imgWidth = cropImg.naturalWidth * cropData.zoom;
-                const imgHeight = cropImg.naturalHeight * cropData.zoom;
-                
-                // オフセット計算（キャンバス基準に変換）
-                const offsetX = cropData.x * (240 / 300);
-                const offsetY = cropData.y * (240 / 300);
-                
-                ctx.drawImage(cropImg, 
-                    offsetX, offsetY, 
-                    imgWidth * (240 / 300), 
-                    imgHeight * (240 / 300)
+                // Canvas上での描画位置・サイズ
+                const canvasDrawX = cropData.x;
+                const canvasDrawY = cropData.y;
+                const canvasDrawWidth = cropImg.naturalWidth * displayScale;
+                const canvasDrawHeight = cropImg.naturalHeight * displayScale;
+
+                // ★ 画像を描画
+                ctx.drawImage(
+                    cropImg,
+                    canvasDrawX,
+                    canvasDrawY,
+                    canvasDrawWidth,
+                    canvasDrawHeight
                 );
 
+                // 描画内容をBase64に変換
                 const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                
                 try {
-                    await updateDoc(doc(db, "reservations", currentEditingId), { userPhotoBase64: croppedBase64 });
+                    await updateDoc(doc(db, "reservations", currentEditingId), { 
+                        userPhotoBase64: croppedBase64 
+                    });
                     alert("✅ 写真を保存しました！");
                     
                     // ★ 詳細画面の写真を即座に更新
@@ -215,8 +236,9 @@
                     }
                     
                     document.getElementById('crop-modal').classList.remove('active');
-                    // closeModal() は呼ばない（詳細モーダルは開いたままにする）
-                } catch (e) { alert("❌ 保存失敗: " + e.message); }
+                } catch (e) { 
+                    alert("❌ 保存失敗: " + e.message); 
+                }
             };
             
             onSnapshot(collection(db, "reservations"), (snap) => {
@@ -281,6 +303,61 @@
                 </tr>`;
             }).join('');
         };
+        
+        // ★ 写真アップロード処理
+        window.handlePhotoUpload = async (event, id) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // ファイルサイズチェック（最大5MB）
+            if (file.size > 5 * 1024 * 1024) {
+                alert("❌ ファイルサイズが大きすぎます（最大5MB）");
+                return;
+            }
+
+            // Base64に変換
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64Data = e.target.result;
+                try {
+                    // Firestoreに保存
+                    await updateDoc(doc(db, "reservations", id), { 
+                        userPhotoBase64: base64Data 
+                    });
+                    alert("✅ 写真を更新しました！");
+
+                    // ★ リアルタイム画面更新
+                    const targetPhoto = document.getElementById('target-photo-' + id);
+                    if (targetPhoto) {
+                        targetPhoto.src = base64Data;
+                    }
+
+                    // 詳細モーダルを一度閉じて再度開く（表示を更新するため）
+                    document.getElementById('modal-overlay').classList.remove('active');
+                    setTimeout(() => window.openDetail(id), 300);
+                } catch (err) {
+                    alert("❌ 保存失敗: " + err.message);
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // ★ 写真削除処理
+        window.deletePhoto = async (id) => {
+            if (!confirm("写真を削除しますか？")) return;
+            try {
+                await updateDoc(doc(db, "reservations", id), { 
+                    userPhotoBase64: null 
+                });
+                alert("✅ 写真を削除しました");
+                
+                // 詳細モーダルを一度閉じて再度開く（表示を更新するため）
+                document.getElementById('modal-overlay').classList.remove('active');
+                setTimeout(() => window.openDetail(id), 300);
+            } catch (err) {
+                alert("❌ 削除失敗: " + err.message);
+            }
+        };
 
         window.openDetail = (id) => {
             const r = reservations.find(item => item.id === id);
@@ -316,6 +393,17 @@
                                 ? `<img src="${photoSrc}" id="target-photo-${r.id}" class="photo-click-target w-full rounded-2xl shadow-2xl border-2 border-white/10 cursor-pointer hover:opacity-80 transition" title="クリックしてトリミング">` 
                                 : '<div class="py-20 text-slate-600 italic text-[10px] border-2 border-dashed border-white/5 rounded-2xl w-full flex flex-col items-center justify-center gap-2"><i class="fas fa-camera text-2xl opacity-20"></i>写真は未送付</div>'}
                         </div>
+                        <!-- ★ 写真差し替えボタン -->
+                        <div class="grid grid-cols-2 gap-2 mt-3">
+                            <label class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-3 rounded-xl font-black italic text-[10px] cursor-pointer transition text-center flex items-center justify-center gap-2">
+                                <i class="fas fa-image"></i> 写真を再選択
+                                <input type="file" id="photo-upload-${r.id}" accept="image/*" style="display:none;" onchange="window.handlePhotoUpload(event, '${r.id}')">
+                            </label>
+                            <button onclick="window.deletePhoto('${r.id}')" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 px-3 py-3 rounded-xl font-black italic text-[10px] transition flex items-center justify-center gap-2">
+                                <i class="fas fa-trash"></i> 削除
+                            </button>
+                        </div>
+                        
                         <div class="grid grid-cols-2 gap-2 w-full mt-2">
                             <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-2 py-3 rounded-xl font-black text-[9px] transition">
                                 ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
