@@ -206,10 +206,17 @@
                 const displayScale = cropData.zoom; // ズーム値
                 
                 // Canvas上での描画位置・サイズ
+                // ★ マイナス値を考慮した調整
                 const canvasDrawX = cropData.x;
                 const canvasDrawY = cropData.y;
                 const canvasDrawWidth = cropImg.naturalWidth * displayScale;
                 const canvasDrawHeight = cropImg.naturalHeight * displayScale;
+
+                // ★ クリッピング領域を設定（枠外は描画しない）
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(0, 0, 240, 300);
+                ctx.clip();
 
                 // ★ 画像を描画
                 ctx.drawImage(
@@ -219,6 +226,8 @@
                     canvasDrawWidth,
                     canvasDrawHeight
                 );
+
+                ctx.restore();
 
                 // 描画内容をBase64に変換
                 const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
