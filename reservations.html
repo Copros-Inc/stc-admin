@@ -130,11 +130,74 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        
+
+        let currentEditingId = null;
         let reservations = [];
         let currentSort = { key: 'createdAt', order: 'desc' };
 
         signInAnonymously(auth).then(() => {
+            const cropImg = document.getElementById('crop-v-image');
+            const cropArea = document.getElementById('crop-v-area');
+
+            // ドラッグ移動処理
+            cropArea.onmousedown = (e) => { 
+                cropData.isDragging = true; 
+                cropData.startX = e.clientX - cropData.x; 
+                cropData.startY = e.clientY - cropData.y; 
+            };
+            window.onmousemove = (e) => {
+                if (!cropData.isDragging) return;
+                cropData.x = e.clientX - cropData.startX;
+                cropData.y = e.clientY - cropData.startY;
+                cropImg.style.transform = `translate(${cropData.x}px, ${cropData.y}px) scale(${cropData.zoom})`;
+            };
+            window.onmouseup = () => { cropData.isDragging = false; };
+
+            // ズーム処理
+            document.getElementById('crop-v-zoom').oninput = (e) => {
+                cropData.zoom = e.target.value;
+                cropImg.style.transform = `translate(${cropData.x}px, ${cropData.y}px) scale(${cropData.zoom})`;
+            };
+
+            // 切り抜き実行（Canvas使用）
+            document.getElementById('btn-crop-v-save').onclick = async () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 240; canvas.height = 300; // 30mm x 24mm比率 ← ★ ここ正確
+                const ctx = canvas.getContext('2d');
+                
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(0, 0, 240, 300);
+                
+                // 画像をキャンバス中央に配置（自動補正）
+                const imgWidth = cropImg.naturalWidth * cropData.zoom;
+                const imgHeight = cropImg.naturalHeight * cropData.zoom;
+                
+                // オフセット計算（キャンバス基準に変換）
+                const offsetX = cropData.x * (240 / 300);
+                const offsetY = cropData.y * (240 / 300);
+                
+                ctx.drawImage(cropImg, 
+                    offsetX, offsetY, 
+                    imgWidth * (240 / 300), 
+                    imgHeight * (240 / 300)
+                );
+
+                const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                try {
+                    await updateDoc(doc(db, "reservations", currentEditingId), { userPhotoBase64: croppedBase64 });
+                    alert("✅ 写真を保存しました！");
+                    
+                    // ★ 詳細画面の写真を即座に更新
+                    const targetPhoto = document.getElementById('target-photo-' + currentEditingId);
+                    if (targetPhoto) {
+                        targetPhoto.src = croppedBase64;
+                    }
+                    
+                    document.getElementById('crop-modal').classList.remove('active');
+                    // closeModal() は呼ばない（詳細モーダルは開いたままにする）
+                } catch (e) { alert("❌ 保存失敗: " + e.message); }
+            };
+            
             onSnapshot(collection(db, "reservations"), (snap) => {
                 reservations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 updateDashboard();
@@ -601,28 +664,27 @@
         let cropData = { x: 0, y: 0, zoom: 1, isDragging: false, startX: 0, startY: 0 };
 
         window.openCropper = (id) => {
-            currentEditingId = id;
+            currentEditingId = id;  // ★ グローバル変数に保存
             const target = document.getElementById('target-photo-' + id);
             const img = document.getElementById('crop-v-image');
-            const zoom = document.getElementById('crop-v-zoom');
-            if (!target || !img) return;
+            if (!target || !img) {
+                alert("写真またはエディタが見つかりません");
+                return;
+            }
 
             img.src = target.src;
-            cropData.x = 0; cropData.y = 0; cropData.zoom = 1;
-            zoom.value = 1;
+            cropData.x = 0; 
+            cropData.y = 0; 
+            cropData.zoom = 1;
+            
+            const zoomSlider = document.getElementById('crop-v-zoom');
+            zoomSlider.value = 1;
+            
             img.style.transform = `translate(0px, 0px) scale(1)`;
             document.getElementById('crop-modal').classList.add('active');
         };
 
-        const cropImg = document.getElementById('crop-v-image');
-        const cropArea = document.getElementById('crop-v-area');
 
-        // ドラッグ移動処理
-        cropArea.onmousedown = (e) => { 
-            cropData.isDragging = true; 
-            cropData.startX = e.clientX - cropData.x; 
-            cropData.startY = e.clientY - cropData.y; 
-        };
         window.onmousemove = (e) => {
             if (!cropData.isDragging) return;
             cropData.x = e.clientX - cropData.startX;
