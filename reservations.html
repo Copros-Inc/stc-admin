@@ -182,49 +182,70 @@
             };
 
         // ★ 切り抜き実行（html2canvas）
-        document.getElementById('btn-crop-v-save').onclick = async () => {
-            try {
-                const cropContainer = document.getElementById('crop-v-area');
-                
-                if (!cropContainer) {
-                    alert("❌ トリミングエリアが見つかりません");
-                    return;
-                }
+document.getElementById('btn-crop-v-save').onclick = async () => {
+    try {
+        const cropContainer = document.getElementById('crop-v-area');
+        
+        const canvas = await html2canvas(cropContainer, {
+            width: 320,
+            height: 400,
+            backgroundColor: '#ffffff',
+            scale: 1,
+            allowTaint: true,
+            useCORS: true
+        });
 
-                const canvas = await html2canvas(cropContainer, {
-                    width: 320,
-                    height: 400,
-                    backgroundColor: '#ffffff',
-                    scale: 1,
-                    allowTaint: true,
-                    useCORS: true
-                });
-
-                const finalCanvas = document.createElement('canvas');
+        // ★ 画像の向きを自動判定して回転
+        const img = new Image();
+        img.src = canvas.toDataURL();
+        
+        img.onload = async () => {
+            const finalCanvas = document.createElement('canvas');
+            
+            // アスペクト比から横向きを判定
+            let needsRotation = false;
+            if (img.width > img.height) {
+                needsRotation = true; // 横向きなら回転が必要
+            }
+            
+            if (needsRotation) {
+                // 90度回転（横向き → 縦向き）
                 finalCanvas.width = 240;
                 finalCanvas.height = 300;
                 const finalCtx = finalCanvas.getContext('2d');
                 
+                finalCtx.save();
+                finalCtx.translate(120, 150);
+                finalCtx.rotate(Math.PI / 2);
+                finalCtx.drawImage(canvas, -200, -160, 320, 400);
+                finalCtx.restore();
+            } else {
+                // 回転不要
+                finalCanvas.width = 240;
+                finalCanvas.height = 300;
+                const finalCtx = finalCanvas.getContext('2d');
                 finalCtx.drawImage(canvas, 0, 0, 320, 400, 0, 0, 240, 300);
-
-                const croppedBase64 = finalCanvas.toDataURL('image/jpeg', 0.85);
-
-                await updateDoc(doc(db, "reservations", currentEditingId), { 
-                    userPhotoBase64: croppedBase64 
-                });
-                alert("✅ 写真を保存しました！");
-
-                const targetPhoto = document.getElementById('target-photo-' + currentEditingId);
-                if (targetPhoto) {
-                    targetPhoto.src = croppedBase64;
-                }
-
-                document.getElementById('crop-modal').classList.remove('active');
-            } catch (e) {
-                console.error(e);
-                alert("❌ 保存失敗: " + e.message);
             }
+
+            const croppedBase64 = finalCanvas.toDataURL('image/jpeg', 0.85);
+
+            await updateDoc(doc(db, "reservations", currentEditingId), { 
+                userPhotoBase64: croppedBase64 
+            });
+            alert("✅ 写真を保存しました！");
+
+            const targetPhoto = document.getElementById('target-photo-' + currentEditingId);
+            if (targetPhoto) {
+                targetPhoto.src = croppedBase64;
+            }
+
+            document.getElementById('crop-modal').classList.remove('active');
         };
+    } catch (e) {
+        console.error(e);
+        alert("❌ 保存失敗: " + e.message);
+    }
+};
 
             // ★ onSnapshot はここに移動（signInAnonymously内）
             onSnapshot(collection(db, "reservations"), (snap) => {
@@ -1023,12 +1044,24 @@ window.downloadExcel = async (id) => {
 const cDate = r.courseDate || "";
 let dateRange = "";
 
-// ★ 区切り文字を「～」または「-」または「～」に対応
-const dates = cDate.split(/[～\-]/); // 「～」「-」両方に対応
+const dates = cDate.split(/[～\-]/);
 
 if (dates.length >= 2) {
-    const startDate = toJapaneseDate(dates[0].trim());
-    const endDate = toJapaneseDate(dates[1].trim());
+    // ★ 現在年を自動取得
+    const currentYear = new Date().getFullYear();
+    
+    const parseDate = (dateStr) => {
+        const trimmed = dateStr.trim();
+        if (/^\d{1,2}\/\d{1,2}$/.test(trimmed)) {
+            // 月/日 形式 → 現在年を追加
+            return new Date(`${currentYear}/${trimmed}`);
+        } else {
+            return new Date(trimmed);
+        }
+    };
+    
+    const startDate = toJapaneseDate(parseDate(dates[0]));
+    const endDate = toJapaneseDate(parseDate(dates[1]));
     dateRange = `${startDate}～${endDate}`;
 } else {
     dateRange = toJapaneseDate(cDate);
