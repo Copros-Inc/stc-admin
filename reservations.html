@@ -1034,18 +1034,7 @@ const toBirthdayWithAge = (birthDateStr) => {
     
     return `${gengo}${yStr}年${month}月${day}日（満${age}歳）`;
 };
-
-        // ★ 基本情報入力
-        console.log("記入日セル:", cellConfig.writeDate);
-        console.log("記入日値:", toJapaneseDate(new Date()));
-        console.log("受講日セル:", cellConfig.courseDate);
-        console.log("受講日値:", dateRange);
-        
-        sheet.getCell(cellConfig.kana).value = r.userKana || "";
-        sheet.getCell(cellConfig.name).value = r.userName || "";
-        sheet.getCell(cellConfig.birth).value = toBirthdayWithAge(r.birthDate);
-        sheet.getCell(cellConfig.writeDate).value = toJapaneseDate(new Date());
-        
+     
 // 受講日（開始～終了）
 const cDate = r.courseDate || "";
 let dateRange = "";
@@ -1072,6 +1061,17 @@ if (dates.length >= 2) {
 } else {
     dateRange = toJapaneseDate(cDate);
 }
+                // ★ 基本情報入力
+        console.log("記入日セル:", cellConfig.writeDate);
+        console.log("記入日値:", toJapaneseDate(new Date()));
+        console.log("受講日セル:", cellConfig.courseDate);
+        console.log("受講日値:", dateRange);
+        
+        sheet.getCell(cellConfig.kana).value = r.userKana || "";
+        sheet.getCell(cellConfig.name).value = r.userName || "";
+        sheet.getCell(cellConfig.birth).value = toBirthdayWithAge(r.birthDate);
+        sheet.getCell(cellConfig.writeDate).value = toJapaneseDate(new Date());
+        
 sheet.getCell(cellConfig.courseDate).value = dateRange;
 
         sheet.getCell(cellConfig.zip).value = r.zip || "";
