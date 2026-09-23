@@ -872,77 +872,215 @@
             }
         };
 
-        // --- ExcelJS出力機能 ---
-        window.downloadExcel = async (id) => {
-            const r = reservations.find(item => item.id === id);
-            if (!r) return;
+// --- ExcelJS出力機能（修正版） ---
+window.downloadExcel = async (id) => {
+    const r = reservations.find(item => item.id === id);
+    if (!r) return;
+    
+    const btn = event.target;
+    const originalText = btn.innerText;
+    btn.innerText = "生成中...";
+
+    try {
+        // ★ 講習ごとにテンプレートを選択
+        let templateFile = 'tamakake.xlsx';
+        let cellConfig = {};
+        
+        if (r.courseName.includes("玉掛")) {
+            templateFile = 'tamakake.xlsx';
+            cellConfig = {
+                photo: 'AB8',
+                kana: 'E21',
+                name: 'E24',
+                birth: 'E30',
+                subsidy: 'AC21',
+                writeDate: 'R24',
+                courseDate: 'R28',
+                zip: 'F32',
+                address: 'F34',
+                phone: 'G37',
+                compZip: 'F39',
+                compAddress: 'F42',
+                company: 'Q39',
+                compPhone: 'G45',
+                receiptNo: 'G64',
+                receiptYes: 'L64',
+                receiptName: 'X64'
+            };
+        } else if (r.courseName.includes("クレーン")) {
+            templateFile = 'crane.xlsx';
+            cellConfig = {
+                photo: 'AB8',
+                kana: 'E21',
+                name: 'E24',
+                birth: 'E30',
+                subsidy: 'AC21',
+                writeDate: 'R24',
+                courseDate: 'R28',
+                zip: 'F32',
+                address: 'F34',
+                phone: 'G37',
+                compZip: 'F39',
+                compAddress: 'F42',
+                company: 'Q39',
+                compPhone: 'G45',
+                receiptNo: 'G66',
+                receiptYes: 'L66',
+                receiptName: 'X66'
+            };
+        } else if (r.courseName.includes("31H") || r.courseName.includes("３１Ｈ")) {
+            templateFile = 'fork31.xlsx';
+            cellConfig = {
+                photo: 'AB8',
+                kana: 'E21',
+                name: 'E24',
+                birth: 'E30',
+                writeDate: 'R24',
+                courseDate: 'R28',
+                zip: 'F32',
+                address: 'F34',
+                phone: 'G37',
+                compZip: 'F39',
+                compAddress: 'F42',
+                company: 'Q39',
+                compPhone: 'G45',
+                receiptNo: 'G66',
+                receiptYes: 'L66',
+                receiptName: 'X66'
+            };
+        }
+
+        const response = await fetch(templateFile);
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
+        const sheet = workbook.getWorksheet(1);
+
+        // ★ 和暦変換関数
+        const toJapaneseDate = (dateStr) => {
+            if (!dateStr) return "";
+            const date = new Date(dateStr);
+            if (isNaN(date)) return dateStr;
             
-            const btn = event.target;
-            const originalText = btn.innerText;
-            btn.innerText = "生成中...";
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            
+            let gengo = "";
+            let jpYear = 0;
+            
+            if (year >= 2019) { gengo = "令和"; jpYear = year - 2018; }
+            else if (year >= 1989) { gengo = "平成"; jpYear = year - 1988; }
+            else if (year >= 1926) { gengo = "昭和"; jpYear = year - 1925; }
+            
+            const yStr = jpYear === 1 ? "元" : jpYear;
+            return `${gengo}${yStr}年${month}月${day}日`;
+        };
 
-            try {
-                const response = await fetch('tamakake.xlsx');
-                const arrayBuffer = await response.arrayBuffer();
-                const workbook = new ExcelJS.Workbook();
-                await workbook.xlsx.load(arrayBuffer);
-                const sheet = workbook.getWorksheet(1);
-
-                // 基本情報入力 (リストに基づき)
-                sheet.getCell('E19').value = r.userKana;
-                sheet.getCell('E22').value = r.userName;
-                sheet.getCell('E28').value = window.toJpDate(r.birthDate);
-                sheet.getCell('Q22').value = window.toJpDate(new Date());
-                
-                // 受講日 (開始〜終了)
-                const cDate = r.courseDate || "";
-                const dates = cDate.split('～');
-                const dateRange = dates.length > 1 
-                    ? `${window.toJpDate(dates[0].trim())}～${window.toJpDate(dates[1].trim())}`
-                    : window.toJpDate(cDate);
-                sheet.getCell('Q26').value = dateRange;
-
-                sheet.getCell('F30').value = r.zip;
-                sheet.getCell('F32').value = r.address;
-                sheet.getCell('G35').value = r.phone;
-                sheet.getCell('F37').value = r.compZip;
-                sheet.getCell('P37').value = r.company;
-                sheet.getCell('F40').value = r.compAddress;
-                sheet.getCell('G43').value = r.compPhone;
-
-                // 助成金 / 領収書 (判定)
-                if (r.subsidy === "利用する") sheet.getCell('Z19').value = "〇";
-                if (r.receiptName === "不要") sheet.getCell('G62').value = "✓";
-                else {
-                    sheet.getCell('L62').value = "✓";
-                    if (r.receiptName === "会社名") sheet.getCell('T62').value = "✓";
-                    else sheet.getCell('X62').value = r.receiptName;
-                }
-
-                // 写真挿入 (X4基準, 24mm x 30mm)
-                const photoSrc = r.userPhotoBase64 || (r.photos && typeof r.photos === 'object' ? r.photos.user : (typeof r.photos === 'string' ? r.photos : null));
-                if (photoSrc) {
-                    const imageId = workbook.addImage({ base64: photoSrc, extension: 'jpeg' });
-                    sheet.addImage(imageId, {
-                        tl: { col: 23, row: 3 }, // X4 (0始まりなのでX=23, 4行目=3)
-                        ext: { width: 91, height: 113 } // 約24mm x 30mm
-                    });
-                }
-
-                const buffer = await workbook.xlsx.writeBuffer();
-                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `受講申込書_${r.userName}.xlsx`;
-                a.click();
-            } catch (e) {
-                console.error(e);
-                alert("Excel生成エラー: " + e.message);
-            } finally {
-                btn.innerText = originalText;
+        // ★ 満年齢計算関数
+        const calculateAge = (birthDateStr) => {
+            if (!birthDateStr) return "";
+            const birthDate = new Date(birthDateStr);
+            const today = new Date();
+            
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
             }
-        };       
+            
+            return age;
+        };
+
+        // ★ 生年月日を昭和表記に変換
+        const toBirthdayWithAge = (birthDateStr) => {
+            if (!birthDateStr) return "";
+            const birthDate = new Date(birthDateStr);
+            const year = birthDate.getFullYear();
+            const month = birthDate.getMonth() + 1;
+            const day = birthDate.getDate();
+            
+            let gengo = "";
+            let jpYear = 0;
+            
+            if (year >= 1989) { gengo = "平成"; jpYear = year - 1988; }
+            else if (year >= 1926) { gengo = "昭和"; jpYear = year - 1925; }
+            
+            const yStr = jpYear === 1 ? "元" : jpYear;
+            const age = calculateAge(birthDateStr);
+            
+            return `${gengo}${yStr}年${month}月${day}日（満${age}歳）`;
+        };
+
+        // ★ 基本情報入力
+        sheet.getCell(cellConfig.kana).value = r.userKana || "";
+        sheet.getCell(cellConfig.name).value = r.userName || "";
+        sheet.getCell(cellConfig.birth).value = toBirthdayWithAge(r.birthDate);
+        sheet.getCell(cellConfig.writeDate).value = toJapaneseDate(new Date());
+        
+        // 受講日（開始～終了）
+        const cDate = r.courseDate || "";
+        const dates = cDate.split('～');
+        let dateRange = "";
+        if (dates.length > 1) {
+            const startDate = toJapaneseDate(dates[0].trim());
+            const endDate = toJapaneseDate(dates[1].trim());
+            dateRange = `${startDate}～${endDate}`;
+        } else {
+            dateRange = toJapaneseDate(cDate);
+        }
+        sheet.getCell(cellConfig.courseDate).value = dateRange;
+
+        sheet.getCell(cellConfig.zip).value = r.zip || "";
+        sheet.getCell(cellConfig.address).value = r.address || "";
+        sheet.getCell(cellConfig.phone).value = r.phone || "";
+        sheet.getCell(cellConfig.compZip).value = r.compZip || "";
+        sheet.getCell(cellConfig.compAddress).value = r.compAddress || "";
+        sheet.getCell(cellConfig.company).value = r.company || "";
+        sheet.getCell(cellConfig.compPhone).value = r.compPhone || "";
+
+        // ★ 人材開発支援金（玉掛け・クレーンのみ）
+        if (cellConfig.subsidy) {
+            if (r.subsidy === "利用する") {
+                sheet.getCell(cellConfig.subsidy).value = "〇";
+            }
+        }
+
+        // ★ 領収書処理
+        if (r.receiptName === "不要") {
+            sheet.getCell(cellConfig.receiptNo).value = "✓";
+        } else if (r.receiptName === "会社名") {
+            sheet.getCell(cellConfig.receiptYes).value = "✓";
+        } else if (r.receiptName && r.receiptName !== "不要") {
+            sheet.getCell(cellConfig.receiptYes).value = "✓";
+            sheet.getCell(cellConfig.receiptName).value = r.receiptName;
+        }
+
+        // ★ 写真挿入
+        const photoSrc = r.userPhotoBase64 || (r.photos && typeof r.photos === 'object' ? r.photos.user : (typeof r.photos === 'string' ? r.photos : null));
+        if (photoSrc) {
+            const imageId = workbook.addImage({ base64: photoSrc, extension: 'jpeg' });
+            sheet.addImage(imageId, {
+                tl: { col: 27, row: 7 }, // AB8 (A=0, B=1, ... AB=27, 8行目=7)
+                ext: { width: 91, height: 113 } // 約24mm x 30mm
+            });
+        }
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `受講申込書_${r.userName}.xlsx`;
+        a.click();
+    } catch (e) {
+        console.error(e);
+        alert("Excel生成エラー: " + e.message);
+    } finally {
+        btn.innerText = originalText;
+    }
+};     
     </script>
     <!-- ★ トリミングモーダル（改善版） -->
     <div id="crop-modal" class="modal-overlay">
