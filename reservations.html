@@ -978,25 +978,25 @@ window.downloadExcel = async (id) => {
         const sheet = workbook.getWorksheet(1);
 
         // ★ 和暦変換関数
-        const toJapaneseDate = (dateStr) => {
-            if (!dateStr) return "";
-            const date = new Date(dateStr);
-            if (isNaN(date)) return dateStr;
-            
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-            
-            let gengo = "";
-            let jpYear = 0;
-            
-            if (year >= 2019) { gengo = "令和"; jpYear = year - 2018; }
-            else if (year >= 1989) { gengo = "平成"; jpYear = year - 1988; }
-            else if (year >= 1926) { gengo = "昭和"; jpYear = year - 1925; }
-            
-            const yStr = jpYear === 1 ? "元" : jpYear;
-            return `${gengo}${yStr}年${month}月${day}日`;
-        };
+const toJapaneseDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr;
+    
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    
+    let gengo = "";
+    let jpYear = 0;
+    
+    if (year >= 2019) { gengo = "R"; jpYear = year - 2018; }
+    else if (year >= 1989) { gengo = "H"; jpYear = year - 1988; }
+    else if (year >= 1926) { gengo = "S"; jpYear = year - 1925; }
+    
+    const yStr = jpYear === 1 ? "元" : jpYear;
+    return `${gengo}${yStr}年${month}月${day}日`;
+};
 
         // ★ 満年齢計算関数
         const calculateAge = (birthDateStr) => {
