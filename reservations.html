@@ -1019,18 +1019,21 @@ window.downloadExcel = async (id) => {
         sheet.getCell(cellConfig.birth).value = toBirthdayWithAge(r.birthDate);
         sheet.getCell(cellConfig.writeDate).value = toJapaneseDate(new Date());
         
-        // 受講日（開始～終了）
-        const cDate = r.courseDate || "";
-        const dates = cDate.split('～');
-        let dateRange = "";
-        if (dates.length > 1) {
-            const startDate = toJapaneseDate(dates[0].trim());
-            const endDate = toJapaneseDate(dates[1].trim());
-            dateRange = `${startDate}～${endDate}`;
-        } else {
-            dateRange = toJapaneseDate(cDate);
-        }
-        sheet.getCell(cellConfig.courseDate).value = dateRange;
+// 受講日（開始～終了）
+const cDate = r.courseDate || "";
+let dateRange = "";
+
+// ★ 区切り文字を「～」または「-」または「～」に対応
+const dates = cDate.split(/[～\-]/); // 「～」「-」両方に対応
+
+if (dates.length >= 2) {
+    const startDate = toJapaneseDate(dates[0].trim());
+    const endDate = toJapaneseDate(dates[1].trim());
+    dateRange = `${startDate}～${endDate}`;
+} else {
+    dateRange = toJapaneseDate(cDate);
+}
+sheet.getCell(cellConfig.courseDate).value = dateRange;
 
         sheet.getCell(cellConfig.zip).value = r.zip || "";
         sheet.getCell(cellConfig.address).value = r.address || "";
