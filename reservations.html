@@ -1036,6 +1036,11 @@ const toBirthdayWithAge = (birthDateStr) => {
 };
 
         // ★ 基本情報入力
+        console.log("記入日セル:", cellConfig.writeDate);
+        console.log("記入日値:", toJapaneseDate(new Date()));
+        console.log("受講日セル:", cellConfig.courseDate);
+        console.log("受講日値:", dateRange);
+        
         sheet.getCell(cellConfig.kana).value = r.userKana || "";
         sheet.getCell(cellConfig.name).value = r.userName || "";
         sheet.getCell(cellConfig.birth).value = toBirthdayWithAge(r.birthDate);
