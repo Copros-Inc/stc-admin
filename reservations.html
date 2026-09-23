@@ -1069,10 +1069,10 @@ if (dates.length >= 2) {
         
         sheet.getCell(cellConfig.kana).value = r.userKana || "";
         sheet.getCell(cellConfig.name).value = r.userName || "";
-        sheet.getCell(cellConfig.writeDate).value = "'" + toJapaneseDate(new Date());
-        sheet.getCell(cellConfig.courseDate).value = "'" + dateRange;
-        sheet.getCell(cellConfig.birth).value = "'" + toBirthdayWithAge(r.birthDate);
-
+        sheet.getCell(cellConfig.writeDate).value = toJapaneseDate(new Date());
+　　　　 sheet.getCell(cellConfig.courseDate).value = dateRange;
+        sheet.getCell(cellConfig.birth).value = toBirthdayWithAge(r.birthDate);
+        
         sheet.getCell(cellConfig.zip).value = r.zip || "";
         sheet.getCell(cellConfig.address).value = r.address || "";
         sheet.getCell(cellConfig.phone).value = r.phone || "";
