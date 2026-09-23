@@ -1015,24 +1015,25 @@ window.downloadExcel = async (id) => {
         };
 
         // ★ 生年月日を昭和表記に変換
-        const toBirthdayWithAge = (birthDateStr) => {
-            if (!birthDateStr) return "";
-            const birthDate = new Date(birthDateStr);
-            const year = birthDate.getFullYear();
-            const month = birthDate.getMonth() + 1;
-            const day = birthDate.getDate();
-            
-            let gengo = "";
-            let jpYear = 0;
-            
-            if (year >= 1989) { gengo = "平成"; jpYear = year - 1988; }
-            else if (year >= 1926) { gengo = "昭和"; jpYear = year - 1925; }
-            
-            const yStr = jpYear === 1 ? "元" : jpYear;
-            const age = calculateAge(birthDateStr);
-            
-            return `${gengo}${yStr}年${month}月${day}日（満${age}歳）`;
-        };
+const toBirthdayWithAge = (birthDateStr) => {
+    if (!birthDateStr) return "";
+    const birthDate = new Date(birthDateStr);
+    const year = birthDate.getFullYear();
+    const month = birthDate.getMonth() + 1;
+    const day = birthDate.getDate();
+    
+    let gengo = "";
+    let jpYear = 0;
+    
+    if (year >= 2019) { gengo = "R"; jpYear = year - 2018; }
+    else if (year >= 1989) { gengo = "H"; jpYear = year - 1988; }
+    else if (year >= 1926) { gengo = "S"; jpYear = year - 1925; }
+    
+    const yStr = jpYear === 1 ? "元" : jpYear;
+    const age = calculateAge(birthDateStr);
+    
+    return `${gengo}${yStr}年${month}月${day}日（満${age}歳）`;
+};
 
         // ★ 基本情報入力
         sheet.getCell(cellConfig.kana).value = r.userKana || "";
