@@ -548,7 +548,7 @@ window.saveNewReservation = async () => {
             company: document.getElementById('new-company').value,
             status: 'accepted',
             mode: 'full',
-            createdAt: serverTimestamp(),
+            createdAt: new Date(),  // ★ 修正
             memo: "郵送申込"
         };
 
