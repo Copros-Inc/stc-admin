@@ -502,7 +502,12 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                     <span><i class="fas fa-edit mr-2"></i> 申込情報入力</span>
                 </h3>
                 <div class="grid md:grid-cols-2 gap-x-8 gap-y-2 space-y-6">
-                    <div><label class="input-label">講習名 *</label><input type="text" id="new-courseName" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="玉掛け"></div>
+                    <div><label class="input-label">講習名 *</label><select id="new-courseName" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" required>
+                    <option value="">-- 講習を選択 --</option>
+                    <option value="玉掛け">玉掛け</option>
+                    <option value="小型移動式クレーン">小型移動式クレーン</option>
+                    <option value="フォークリフト（31H）">フォークリフト（31H）</option>
+                    </select></div>
                     <div><label class="input-label">受講日 *</label><input type="text" id="new-courseDate" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="10/5-10/7"></div>
                     <div><label class="input-label">氏名（漢字） *</label><input type="text" id="new-userName" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="下関 太郎"></div>
                     <div><label class="input-label">フリガナ *</label><input type="text" id="new-userKana" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="シモノセキ タロウ"></div>
