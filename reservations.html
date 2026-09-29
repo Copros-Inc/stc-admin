@@ -90,9 +90,14 @@
         <h1 class="admin-page-title">Reservations</h1>
         <p class="admin-page-subtitle">受講申込・キャンセル待ちのリアルタイム管理</p>
     </div>
-    <a href="https://cloudconvert.com/pdf-to-jpg" target="_blank" class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-xl font-black italic shadow-lg shadow-orange-600/20 transition flex items-center justify-center gap-2">
-        <i class="fas fa-exchange-alt"></i> PDF → JPEG
-    </a>
+    <div class="flex gap-3">
+        <button onclick="window.createNewReservation()" class="bg-amber-600 hover:bg-amber-500 text-white px-6 py-3 rounded-xl font-black italic shadow-lg shadow-amber-600/20 transition flex items-center gap-2">
+            <i class="fas fa-plus"></i> 新規申込
+        </button>
+        <a href="https://cloudconvert.com/pdf-to-jpg" target="_blank" class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-xl font-black italic shadow-lg shadow-orange-600/20 transition flex items-center justify-center gap-2">
+            <i class="fas fa-exchange-alt"></i> PDF → JPEG
+        </a>
+    </div>
 </div>
         
 
@@ -479,6 +484,82 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
             
             document.getElementById('modal-overlay').classList.add('active');
         };
+
+        window.createNewReservation = () => {
+    const body = document.getElementById('modal-body');
+    
+    body.innerHTML = `
+        <!-- 最上部：タイトル -->
+        <div class="md:col-span-3 mb-6 flex items-center gap-4">
+            <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-4 py-1 rounded-full text-[10px] font-black italic uppercase tracking-widest">新規作成（郵送申込）</span>
+            <div class="h-[1px] flex-1 bg-white/10"></div>
+        </div>
+
+        <!-- 編集フォーム -->
+        <div class="md:col-span-3">
+            <div class="bg-white/5 p-8 rounded-[2rem] border border-white/10 shadow-2xl">
+                <h3 class="text-sky-500 font-black italic text-sm mb-6 border-b border-sky-500/20 pb-2 uppercase flex items-center justify-between">
+                    <span><i class="fas fa-edit mr-2"></i> 申込情報入力</span>
+                </h3>
+                <div class="grid md:grid-cols-2 gap-x-8 gap-y-2 space-y-6">
+                    <div><label class="input-label">講習名 *</label><input type="text" id="new-courseName" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="玉掛け"></div>
+                    <div><label class="input-label">受講日 *</label><input type="text" id="new-courseDate" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="10/5-10/7"></div>
+                    <div><label class="input-label">氏名（漢字） *</label><input type="text" id="new-userName" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="下関 太郎"></div>
+                    <div><label class="input-label">フリガナ *</label><input type="text" id="new-userKana" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="シモノセキ タロウ"></div>
+                    <div><label class="input-label">生年月日</label><input type="text" id="new-birthDate" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="YYYY-MM-DD"></div>
+                    <div><label class="input-label">電話番号</label><input type="text" id="new-phone" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="090-0000-0000"></div>
+                    <div class="md:col-span-2"><label class="input-label">郵便番号</label><input type="text" id="new-zip" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="750-0000"></div>
+                    <div class="md:col-span-2"><label class="input-label">住所</label><input type="text" id="new-address" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="山口県下関市..."></div>
+                    <div><label class="input-label">メール</label><input type="text" id="new-email" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="example@mail.com"></div>
+                    <div><label class="input-label">会社名</label><input type="text" id="new-company" class="bg-transparent text-white font-bold text-sm w-full outline-none focus:text-sky-300 transition border-b border-white/10 pb-2" placeholder="株式会社〇〇"></div>
+                </div>
+                <button onclick="window.saveNewReservation()" class="w-full mt-8 bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-2xl font-black italic uppercase transition text-sm shadow-xl shadow-amber-600/20 flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i> 新規作成
+                </button>
+            </div>
+        </div>
+
+        <!-- 下部：アクションボタン -->
+        <div class="md:col-span-3 mt-8 flex gap-4 p-6 bg-white/5 rounded-3xl border border-white/5">
+            <button onclick="closeModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-xl font-black italic transition text-sm">キャンセル</button>
+        </div>
+    `;
+    
+    document.getElementById('modal-overlay').classList.add('active');
+};
+
+window.saveNewReservation = async () => {
+    try {
+        const newData = {
+            courseName: document.getElementById('new-courseName').value,
+            courseDate: document.getElementById('new-courseDate').value,
+            userName: document.getElementById('new-userName').value,
+            userKana: document.getElementById('new-userKana').value,
+            birthDate: document.getElementById('new-birthDate').value,
+            phone: document.getElementById('new-phone').value,
+            zip: document.getElementById('new-zip').value,
+            address: document.getElementById('new-address').value,
+            email: document.getElementById('new-email').value,
+            company: document.getElementById('new-company').value,
+            status: 'accepted',
+            mode: 'full',
+            createdAt: serverTimestamp(),
+            memo: "郵送申込"
+        };
+
+        if (!newData.courseName || !newData.courseDate || !newData.userName || !newData.userKana) {
+            alert("❌ 必須項目を入力してください（講習名、受講日、氏名、フリガナ）");
+            return;
+        }
+
+        await addDoc(collection(db, "reservations"), newData);
+        alert("✅ 新規申込を作成しました！");
+        closeModal();
+    } catch (e) {
+        console.error(e);
+        alert("❌ 作成失敗: " + e.message);
+    }
+};
         
         window.processAction = async (id, status, r) => {
             if(!confirm(`ステータスを更新しますか？`)) return;
