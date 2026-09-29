@@ -146,7 +146,7 @@
     <!-- ロジック部分は一切変えずに維持 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, getDocs, where, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc, getDocs, where, deleteDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         
         const firebaseConfig = { 
@@ -548,7 +548,7 @@ window.saveNewReservation = async () => {
             company: document.getElementById('new-company').value,
             status: 'accepted',
             mode: 'full',
-            createdAt: { toDate: () => new Date(), seconds: Math.floor(Date.now() / 1000) },
+            createdAt: serverTimestamp(),
             memo: "郵送申込"
         };
 
