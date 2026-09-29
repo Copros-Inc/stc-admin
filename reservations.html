@@ -425,11 +425,13 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                             </button>
                         </div>
                     </div>
-                    <div class="bg-sky-500/5 p-6 rounded-[2rem] border border-sky-500/10 text-left">
-                        <p class="text-sky-500 font-black italic text-[9px] uppercase mb-2 tracking-widest">Course Info</p>
-                        <p class="text-white font-bold text-xs leading-relaxed">${r.courseName || ''}<br><span class="text-sky-300/60 font-en text-[10px]">${r.courseDate || ''}</span></p>
-                    </div>
-                </div>
+<div class="bg-sky-500/5 p-6 rounded-[2rem] border border-sky-500/10 text-left">
+    <p class="text-sky-500 font-black italic text-[9px] uppercase mb-2 tracking-widest">Course Info</p>
+    <div class="mb-4">
+        <p class="text-white font-bold text-xs">${r.courseName || ''}</p>
+        <input type="text" id="edit-courseDate" value="${r.courseDate || ''}" class="bg-transparent text-sky-300/60 font-en text-[10px] w-full outline-none focus:text-sky-300 border-b border-sky-300/20 transition mt-2">
+    </div>
+</div>
 
                 <!-- 右側：編集フォーム -->
                 <div class="md:col-span-2">
@@ -641,7 +643,8 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                 receiptName: document.getElementById('edit-receiptName').value,
                 exType: document.getElementById('edit-exType').value,
                 exNo: document.getElementById('edit-exNo').value,
-                exInfo: document.getElementById('edit-exInfo').value
+                exInfo: document.getElementById('edit-exInfo').value,
+                courseDate: document.getElementById('edit-courseDate').value
             };
             if(!confirm("内容を保存しますか？")) return;
             try {
