@@ -324,8 +324,14 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                     <td class="text-sky-400 font-black italic text-[10px]">${r.regNo || '-'}</td>
                     <td>${modeTag}</td>
                     <td><div class="text-[#00a2ff] font-[900] italic text-sm">${cleanCourseName}</div><div class="text-[10px] text-white opacity-60 font-en font-bold">${cleanCourseDate}</div></td>
-                    <td class="font-[900] italic text-white text-lg">${!r.mailStatus ? '<span class="new-dot"></span>' : ''}${r.userName}</td>
-                    <td class="text-slate-300 font-bold text-xs italic">${r.company || '-'}</td>
+                    <td class="font-[900] italic text-white text-lg">${(!r.regNo && r.status !== 'revoked') ? '<span class="new-dot"></span>' : ''}${r.userName}</td>
+                    <td class="text-slate-300 font-bold text-xs italic">
+                        <div>${r.company || '-'}</div>
+                        <div class="flex gap-2 mt-1">
+                            ${r.paymentDate ? `<span class="text-[9px] text-emerald-400">💰${r.paymentDate}</span>` : ''}
+                            ${r.docStatus === 'complete' ? `<span class="text-[9px] text-sky-400 font-black tracking-tighter">📄済</span>` : ''}
+                        </div>
+                    </td>
                     <td><div class="w-32">${mailBtn}${isSent}</div></td>
                     <td><button class="bg-white/10 hover:bg-white/20 text-white text-[10px] px-5 py-2 rounded-lg font-black shadow-lg transition" onclick="window.openDetail('${r.id}')">詳細</button></td>
                 </tr>`;
@@ -438,9 +444,9 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                         </button>
                         
                         <div class="grid grid-cols-2 gap-2 w-full mt-2">
-                            <button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-2 py-3 rounded-xl font-black text-[9px] transition">
-                                ${r.paymentStatus === 'paid' ? '💰 入金済' : '💸 未入金'}
-                            </button>
+<button onclick="window.toggleStatus('${r.id}', 'paymentStatus', '${r.paymentStatus || ''}')" class="bg-slate-800 ${r.paymentStatus === 'paid' ? 'text-emerald-400 border-emerald-500' : 'text-slate-500 border-white/10'} border px-2 py-3 rounded-xl font-black text-[9px] transition">
+    ${r.paymentStatus === 'paid' ? `💰 ${r.paymentDate}済` : '💸 未入金'}
+</button>
                             <button onclick="window.toggleStatus('${r.id}', 'docStatus', '${r.docStatus || ''}')" class="bg-slate-800 ${r.docStatus === 'complete' ? 'text-sky-400 border-sky-500' : 'text-slate-500 border-white/10'} border px-2 py-3 rounded-xl font-black text-[9px] transition">
                                 ${r.docStatus === 'complete' ? '📄 書類完了' : '📝 書類未済'}
                             </button>
@@ -487,20 +493,23 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                     </div>
                 </div>
 
-                <!-- 下部：アクションボタン（横並び） -->
+                       <!-- 下部：アクションボタン（横並び） -->
                 <div class="md:col-span-3 mt-8 flex flex-row items-center justify-start gap-4 p-6 bg-white/5 rounded-3xl border border-white/5 overflow-x-auto">
                     
-                    <!-- キャンセル待ちの場合：繰り上げ または 取り消しボタンを表示 -->
                     ${r.status === 'waiting' ? `
                         <button onclick="window.processUp('${r.id}')" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-4 rounded-xl font-black italic shadow-lg transition text-sm whitespace-nowrap">
                             <i class="fas fa-arrow-circle-up mr-1"></i> 繰り上げて本申込依頼
                         </button>
-                        <button onclick="window.processCancelFail('${r.id}')" class="bg-slate-600 hover:bg-slate-500 text-white px-6 py-4 rounded-xl font-black italic shadow-lg transition text-sm whitespace-nowrap">
-                            <i class="fas fa-times-circle mr-1"></i> 不可通知して取消
-                        </button>
                     ` : `
                         <button id="btn-accept-final" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-xl font-black italic shadow-lg transition text-sm flex-1 min-w-[120px] whitespace-nowrap">受付を確定</button>
                     `}
+
+                    <!-- ★取り消し(枠を戻す)ボタン：ステータスに関わらず表示 -->
+                    ${r.status !== 'revoked' ? `
+                        <button onclick="window.processRevokeAndRelease('${r.id}')" class="bg-slate-600 hover:bg-slate-500 text-white px-6 py-4 rounded-xl font-black italic shadow-lg transition text-sm whitespace-nowrap">
+                            <i class="fas fa-user-minus mr-1"></i> 取消(枠を戻す)
+                        </button>
+                    ` : ''}
 
                     <button onclick="window.downloadExcel('${r.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-xl font-black italic shadow-lg transition text-sm flex-1 min-w-[180px] whitespace-nowrap flex items-center justify-center gap-2"><i class="fas fa-file-excel"></i> 正式申込書(Excel)</button> 
                     <button onclick="closeModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-xl font-black italic transition text-sm flex-1 min-w-[100px] whitespace-nowrap">閉じる</button>
@@ -538,6 +547,37 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                 window.closeModal();
             } catch (e) { alert("エラー: " + e.message); }
         };
+
+              window.processRevokeAndRelease = async (id) => {
+            const r = reservations.find(item => item.id === id);
+            if(!confirm("この申込を取り消し、HPの予約枠を「空き」に戻しますか？\n(取り消し通知メールも送信されます)")) return;
+            
+            try {
+                // 1. 取り消し通知メール送信
+                await window.sendMail(id, 'cancel_fail');
+
+                // 2. 予約枠を戻す (HPの残数を増やす)
+                const q = query(collection(db, "schedules"), where("courseName", "==", r.courseName), where("date", "==", r.courseDate));
+                const snap = await getDocs(q);
+                if(!snap.empty) {
+                    const sched = snap.docs[0];
+                    const field = r.mode === 'full' ? 'fullApplied' : 'reserved';
+                    // カウントが0より大きい場合のみ、マイナス1（席を1つ増やす）
+                    if ((sched.data()[field] || 0) > 0) {
+                        await updateDoc(doc(db, "schedules", sched.id), { [field]: increment(-1) });
+                    }
+                }
+
+                // 3. 申込データのステータスを「取り消し」に更新
+                await updateDoc(doc(db, "reservations", id), { 
+                    status: 'revoked',
+                    mailStatus: 'sent' 
+                });
+
+                alert("取り消し処理と予約枠の返却が完了しました。");
+                window.closeModal();
+            } catch (e) { alert("エラー: " + e.message); }
+        };  
 
         window.createNewReservation = () => {
     const body = document.getElementById('modal-body');
@@ -761,15 +801,25 @@ window.saveNewReservation = async () => {
         window.deleteRes = async (id) => { if(confirm("本当に削除しますか？")) { await deleteDoc(doc(db, "reservations", id)); closeModal(); } };
  
         window.toggleStatus = async (id, field, currentVal) => {
-            const newVal = (currentVal === 'paid' || currentVal === 'complete') ? '' : (field === 'paymentStatus' ? 'paid' : 'complete');
+            const today = new Date();
+            const dateStr = (today.getMonth() + 1) + '/' + today.getDate();
+            
+            let updateData = {};
+            if (field === 'paymentStatus') {
+                const isPaid = currentVal === 'paid';
+                updateData.paymentStatus = isPaid ? '' : 'paid';
+                updateData.paymentDate = isPaid ? null : dateStr; // 入金した日を記録
+            } else {
+                updateData.docStatus = currentVal === 'complete' ? '' : 'complete';
+            }
+
             try {
-                await updateDoc(doc(db, "reservations", id), { [field]: newVal });
+                await updateDoc(doc(db, "reservations", id), updateData);
                 alert("ステータスを更新しました");
-                // 一覧を最新にするため、一度詳細を閉じる運用が安全です
                 window.closeModal();
             } catch (e) { alert("更新失敗: " + e.message); }
         };
-
+        
         window.saveReservationEdit = async (id) => {
             const updatedData = {
                 regNo: document.getElementById('edit-regNo').value,
@@ -1052,6 +1102,7 @@ window.downloadExcel = async (id) => {
     btn.innerText = "生成中...";
 
     try {
+        await updateDoc(doc(db, "reservations", id), { docStatus: 'complete' });
         // ★ 講習ごとにテンプレートを選択
         let templateFile = 'tamakake.xlsx';
         let cellConfig = {};
