@@ -25,6 +25,9 @@
         .tag-mode { font-size: 0.65rem; padding: 4px 10px; border-radius: 6px; font-[900]; white-space: nowrap; }
         .mode-full { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
         .mode-simple { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+        /* 追加：繰り上げと取り消しのバッジ色 */
+.mode-cancel-up { background: rgba(168, 85, 247, 0.2); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
+.mode-revoked { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); }
 
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
@@ -292,15 +295,28 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                 const cleanCourseDate = typeof r.courseDate === 'string' ? r.courseDate.split(',')[0].trim() : r.courseDate;
 
                 let mailBtn = "";
-                if(r.status === 'waiting') mailBtn = `<button class="btn-mail-action !bg-amber-600 !text-white" onclick="window.sendMail('${r.id}', 'waiting')">待機案内</button>`;
-                else if(r.mode === 'full') mailBtn = `<button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'guide')">受講案内</button>`;
-                else mailBtn = `<button class="btn-mail-action !bg-yellow-500 !text-slate-900" onclick="window.sendMail('${r.id}', 'simple')">本申込依頼</button>`;
-
                 let modeTag = "";
+
                 if (r.status === 'waiting') {
-                    modeTag = `<span class="tag-mode mode-simple" style="background:rgba(239,68,68,0.2); color:#ef4444; border-color:rgba(239,68,68,0.3);">キャンセル待ち</span>`;
+                    // キャンセル待ち状態
+                    modeTag = `<span class="tag-mode" style="background:rgba(239,68,68,0.2); color:#ef4444; border-color:rgba(239,68,68,0.3);">キャンセル待ち</span>`;
+                    mailBtn = `<button class="btn-mail-action !bg-red-600 !text-white" onclick="window.sendMail('${r.id}', 'waiting_received')">待機受理連絡</button>`;
+                } else if (r.status === 'revoked') {
+                    // 取り消し済み状態
+                    modeTag = `<span class="tag-mode mode-revoked">取り消し</span>`;
+                    mailBtn = `<span class="text-[9px] text-slate-500 font-bold block text-center italic">対応終了</span>`;
+                } else if (r.memo && r.memo.includes("繰り上げ")) {
+                    // 繰り上げ合格した人
+                    modeTag = `<span class="tag-mode mode-cancel-up">キャンセル繰上</span>`;
+                    mailBtn = `<button class="btn-mail-action !bg-purple-600 !text-white" onclick="window.sendMail('${r.id}', 'simple')">繰上本申込依頼</button>`;
+                } else if (r.mode === 'full') {
+                    // 通常の本申込
+                    modeTag = `<span class="tag-mode mode-full">本申込</span>`;
+                    mailBtn = `<button class="btn-mail-action" onclick="window.sendMail('${r.id}', 'guide')">受講案内</button>`;
                 } else {
-                    modeTag = `<span class="tag-mode ${r.mode === 'full' ? 'mode-full' : 'mode-simple'}">${r.mode === 'full' ? '本申込' : '仮予約'}</span>`;
+                    // 通常の仮予約
+                    modeTag = `<span class="tag-mode mode-simple">仮予約</span>`;
+                    mailBtn = `<button class="btn-mail-action !bg-yellow-500 !text-slate-900" onclick="window.sendMail('${r.id}', 'simple')">本申込依頼</button>`;
                 }
 
                 return `<tr>
@@ -473,16 +489,54 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
 
                 <!-- 下部：アクションボタン（横並び） -->
                 <div class="md:col-span-3 mt-8 flex flex-row items-center justify-start gap-4 p-6 bg-white/5 rounded-3xl border border-white/5 overflow-x-auto">
-                    <button id="btn-accept-final" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-xl font-black italic shadow-lg transition text-sm flex-1 min-w-[120px] whitespace-nowrap">受付を確定</button>
+                    
+                    <!-- キャンセル待ちの場合：繰り上げ または 取り消しボタンを表示 -->
+                    ${r.status === 'waiting' ? `
+                        <button onclick="window.processUp('${r.id}')" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-4 rounded-xl font-black italic shadow-lg transition text-sm whitespace-nowrap">
+                            <i class="fas fa-arrow-circle-up mr-1"></i> 繰り上げて本申込依頼
+                        </button>
+                        <button onclick="window.processCancelFail('${r.id}')" class="bg-slate-600 hover:bg-slate-500 text-white px-6 py-4 rounded-xl font-black italic shadow-lg transition text-sm whitespace-nowrap">
+                            <i class="fas fa-times-circle mr-1"></i> 不可通知して取消
+                        </button>
+                    ` : `
+                        <button id="btn-accept-final" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-xl font-black italic shadow-lg transition text-sm flex-1 min-w-[120px] whitespace-nowrap">受付を確定</button>
+                    `}
+
                     <button onclick="window.downloadExcel('${r.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-xl font-black italic shadow-lg transition text-sm flex-1 min-w-[180px] whitespace-nowrap flex items-center justify-center gap-2"><i class="fas fa-file-excel"></i> 正式申込書(Excel)</button> 
                     <button onclick="closeModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-xl font-black italic transition text-sm flex-1 min-w-[100px] whitespace-nowrap">閉じる</button>
                     <button id="btn-delete-final" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 px-6 py-4 rounded-xl font-black italic text-[11px] transition ml-auto whitespace-nowrap">削除</button>
                 </div>`;
 
-            document.getElementById('btn-accept-final').onclick = () => window.processAction(r.id, 'accepted', r);
+            const btnAccept = document.getElementById('btn-accept-final');
+            if(btnAccept) btnAccept.onclick = () => window.processAction(r.id, 'accepted', r);
             document.getElementById('btn-delete-final').onclick = () => window.deleteRes(r.id);
-            
             document.getElementById('modal-overlay').classList.add('active');
+        };
+
+        // --- 新規関数：繰り上げ処理 ---
+        window.processUp = async (id) => {
+            if(!confirm("キャンセル繰り上げ処理を行い、本申込依頼メールを送りますか？")) return;
+            try {
+                const r = reservations.find(item => item.id === id);
+                await updateDoc(doc(db, "reservations", id), { 
+                    status: 'accepted',
+                    memo: (r.memo || "") + " (繰り上げ)"
+                });
+                await window.sendMail(id, 'simple');
+                alert("繰り上げ処理とメール送信が完了しました！");
+                window.closeModal();
+            } catch (e) { alert("エラー: " + e.message); }
+        };
+
+        // --- 新規関数：取り消し通知 ---
+        window.processCancelFail = async (id) => {
+            if(!confirm("欠員が出なかった旨の通知を送り、取り消し処理をしますか？")) return;
+            try {
+                await window.sendMail(id, 'cancel_fail');
+                await updateDoc(doc(db, "reservations", id), { status: 'revoked' });
+                alert("取り消し通知を送りました。");
+                window.closeModal();
+            } catch (e) { alert("エラー: " + e.message); }
         };
 
         window.createNewReservation = () => {
@@ -648,29 +702,39 @@ window.saveNewReservation = async () => {
                 pdfUrl = "https://shimonoseki-tc.com/points.html#flow";
             }
 
-            // --- 出し分けロジックの適用 ---
+            // --- [ここから修正] 送信メールの中身出し分け ---
             let guideBlock = "";
-            if (type === 'guide') {
-                guideBlock = `<div style="margin:20px 0;padding:20px;background-color:#fff7ed;border:1px solid #fb923c;border-radius:10px;text-align:center;"><a href="${guideUrl}" style="background-color:#fb923c;color:#ffffff;padding:12px 25px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;font-size:14px;">受講案内と会場案内(PDF)を確認する</a></div>`;
-            }
+            let deadline_note = "";
 
-            let preApplyBlock = "";
-            if (type === 'simple') {
-                preApplyBlock = `
+            if (type === 'waiting_received') {
+                // 【新規】キャンセル待ち受理の第一報
+                deadline_note = "【キャンセル待ち受理】お申し込みありがとうございます。内容を確認いたしました。現在満員のため「キャンセル待ち」として承りました。受講1週間前までに欠員が出た場合のみ、事務局より改めてご連絡差し上げます。";
+                guideBlock = `<div style="margin:20px 0;padding:20px;background-color:#fef2f2;border:1px solid #ef4444;border-radius:10px;text-align:center;color:#ef4444;font-weight:bold;">現在、キャンセル待ちとして受付を完了しました。</div>`;
+            } else if (type === 'cancel_fail') {
+                // 【新規】キャンセルが出なかった時の通知
+                deadline_note = "【キャンセル待ちに関するご案内】大変恐縮ながら、ご希望の日程で欠員が出なかったため、今回のお申し込みは「取り消し」とさせていただきます。またの機会のご利用を心よりお待ちしております。";
+                guideBlock = `<div style="text-align:center;padding:20px;border:1px solid #ddd;border-radius:10px;"><p style="font-size:13px;color:#666;margin-bottom:10px;">最新の空き状況はHPをご確認ください。</p><a href="https://shimonoseki-tc.com/index.html#schedule-section" style="color:#00a2ff;font-weight:bold;">開催スケジュールを見る</a></div>`;
+            } else if (type === 'guide') {
+                // 通常の本申込完了・受講案内
+                deadline_note = "【本申込・完了】お申し込み内容およびお写真を正しく受領いたしました。本申込の手続きが全て完了しましたことを通知いたします。";
+                guideBlock = `<div style="margin:20px 0;padding:20px;background-color:#fff7ed;border:1px solid #fb923c;border-radius:10px;text-align:center;"><a href="${guideUrl}" style="background-color:#fb923c;color:#ffffff;padding:12px 25px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;font-size:14px;">受講案内と会場案内(PDF)を確認する</a></div>`;
+            } else if (type === 'simple') {
+                // 仮予約・または繰り上げ時の本申込依頼
+                const isUp = r.memo && r.memo.includes("繰り上げ");
+                deadline_note = isUp 
+                    ? "【キャンセル発生のご案内】欠員が出ましたので、優先的にご案内いたします。7日以内に以下のボタンより本申込（写真送付等）のお手続きをお願いいたします。" 
+                    : "【本申込のお願い】仮予約ありがとうございます。内容を確認いたしました。7日以内に以下のボタンより本申込のお手続きをお願いいたします。";
+                
+                guideBlock = `
                     <div style="margin:20px 0;padding:15px;border:2px dashed #00a2ff;border-radius:10px;text-align:center;">
                         <p style="font-size:13px;color:#001a33;font-weight:bold;margin-bottom:10px;">郵送・FAXで本申込される方(申込書)</p>
-                        <a href="${pdfUrl}" style="color:#00a2ff;font-size:14px;font-weight:bold;text-decoration:underline;">
-                            ${r.courseName} 申込書(PDF)ダウンロード
-                        </a>
+                        <a href="${pdfUrl}" style="color:#00a2ff;font-size:14px;font-weight:bold;text-decoration:underline;">${r.courseName} 申込書(PDF)</a>
                         <div style="margin-top:25px;border-top:1px solid #eee;padding-top:15px;">
                             <p style="font-size:13px;color:#666;margin-bottom:10px;">スマホ・PCで本申込を行う方</p>
-                            <a href="https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&regNo=${encodeURIComponent(r.regNo || '')}&mode=full" style="background-color: #001a33; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                                Web本申込手続きへ進む
-                            </a>
+                            <a href="https://shimonoseki-tc.com/apply.html?course=${encodeURIComponent(r.courseName)}&date=${encodeURIComponent(r.courseDate)}&regNo=${encodeURIComponent(r.regNo || '')}&mode=full" style="background-color: #001a33; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">Web本申込手続きへ進む</a>
                         </div>
                     </div>`;
             }
-
             const emailParams = {
                 userName: r.userName,
                 userKana: r.userKana || "",
@@ -680,10 +744,8 @@ window.saveNewReservation = async () => {
                 phone: r.phone || "確認中",
                 regNo: r.regNo || "（未発行）",
                 guideBlock: guideBlock,
-                preApplyBlock: preApplyBlock,
-                deadline_note: type === 'simple' 
-                    ? "【本申込のお願い】仮予約ありがとうございます。内容を確認いたしました。7日以内に以下のボタンより本申込のお手続きをお願いいたします。" 
-                    : "【本申込・完了】お申し込み内容およびお写真を正しく受領いたしました。本申込の手続きが全て完了しましたことを通知いたします。"
+                preApplyBlock: "", 
+                deadline_note: deadline_note
             };
             
             try {
