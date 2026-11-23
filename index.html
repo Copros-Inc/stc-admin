@@ -95,26 +95,39 @@
 
     <!-- 過去・計画データ入力モーダル -->
     <div id="past-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
-                <h2 class="text-2xl font-black italic text-sky-400">Planning & Historical Data</h2>
+        <div class="modal-content !max-w-[1200px]">
+            <div class="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                <h2 class="text-2xl font-black italic text-sky-400">Master Data Management</h2>
                 <button onclick="closePastDataModal()" class="text-slate-500 hover:text-white text-3xl">&times;</button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- 左：前年度実績（前年比較用） -->
-                <div>
-                    <h3 class="text-xs font-black text-amber-500 uppercase mb-4">前年度 受講者数実績 (比較用)</h3>
-                    <div id="past-input-container" class="grid grid-cols-3 gap-3"></div>
-                </div>
-                <!-- 右：今年度開催計画（目標達成率用） -->
-                <div>
-                    <h3 class="text-xs font-black text-emerald-500 uppercase mb-4">今年度 講習開催予定回数 (目標計算用)</h3>
-                    <div id="plan-input-container" class="grid grid-cols-3 gap-3"></div>
-                </div>
+            <!-- 年度切り替えタブ -->
+            <div class="flex gap-2 mb-6">
+                <button onclick="switchModalYear(2025)" id="tab-2025" class="px-6 py-2 rounded-t-xl font-black italic text-xs bg-sky-600 text-white">2025年度</button>
+                <button onclick="switchModalYear(2026)" id="tab-2026" class="px-6 py-2 rounded-t-xl font-black italic text-xs bg-white/5 text-slate-400">2026年度</button>
+                <button onclick="switchModalYear(2027)" id="tab-2027" class="px-6 py-2 rounded-t-xl font-black italic text-xs bg-white/5 text-slate-400">2027年度</button>
             </div>
 
-            <button onclick="savePastData()" class="w-full mt-10 bg-sky-600 hover:bg-sky-500 text-white py-5 rounded-2xl font-black italic transition">データを保存してダッシュボードを更新</button>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-[10px]">
+                    <thead>
+                        <tr class="text-slate-500 border-b border-white/10 text-left italic">
+                            <th class="p-2">対象月</th>
+                            <th class="p-2 text-sky-400">玉掛 (回数)</th>
+                            <th class="p-2 text-sky-400">玉掛 (前年人数)</th>
+                            <th class="p-2 text-emerald-400">クレーン (回数)</th>
+                            <th class="p-2 text-emerald-400">クレーン (前年人数)</th>
+                            <th class="p-2 text-amber-400">フォーク (回数)</th>
+                            <th class="p-2 text-amber-400">フォーク (前年人数)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-table-body">
+                        <!-- JSで生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button onclick="savePastData()" class="w-full mt-10 bg-sky-600 hover:bg-sky-500 text-white py-5 rounded-2xl font-black italic transition shadow-2xl">全ての年度データを一括保存する</button>
         </div>
     </div>
 
@@ -135,11 +148,14 @@
         const prices = { "玉掛け": 27000, "クレーン": 37000, "31H": 32000, "11H": 22000, "その他": 15000 };
         const capacityMap = { "玉掛け": 8, "クレーン": 6, "フォーク": 10 };
 
+        let currentModalYear = 2025; 
+        let statsData = {}; 
+
         signInAnonymously(auth).then(async () => {
-            const res = await getDoc(doc(db, "settings", "management_stats"));
+            // ★v2データ（科目別）を読み込み
+            const res = await getDoc(doc(db, "settings", "management_stats_v2"));
             if(res.exists()) statsData = res.data();
             
-            // 今日の月から初期表示月をセット（4月開始indexに変換）
             const now = new Date();
             const curM = now.getMonth() + 1;
             document.getElementById('target-month-select').value = curM >= 4 ? curM - 4 : curM + 8;
@@ -149,6 +165,60 @@
                 updateDashboard();
             });
         });
+
+        window.switchModalYear = (year) => {
+            currentModalYear = year;
+            [2025, 2026, 2027].forEach(y => {
+                const btn = document.getElementById(`tab-${y}`);
+                if(btn) btn.className = y === year ? 'px-6 py-2 rounded-t-xl font-black italic text-xs bg-sky-600 text-white' : 'px-6 py-2 rounded-t-xl font-black italic text-xs bg-white/5 text-slate-400';
+            });
+            renderModalTable();
+        };
+
+        function renderModalTable() {
+            const tbody = document.getElementById('modal-table-body');
+            tbody.innerHTML = months.map((m, i) => {
+                const key = `${currentModalYear}_${i}`;
+                const d = statsData[key] || { t_cnt:0, t_prs:0, c_cnt:0, c_prs:0, f_cnt:0, f_prs:0 };
+                return `
+                <tr class="border-b border-white/5 bg-white/[0.02]">
+                    <td class="p-2 font-black text-slate-300 italic">${currentModalYear} ${m}</td>
+                    <td class="p-1"><input type="number" id="in-${key}-t_cnt" value="${d.t_cnt}" class="bg-black/40 border border-white/10 p-1 w-full text-center text-sky-400"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-t_prs" value="${d.t_prs}" class="bg-black/40 border border-white/10 p-1 w-full text-center text-sky-200 opacity-50"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-c_cnt" value="${d.c_cnt}" class="bg-black/40 border border-white/10 p-1 w-full text-center text-emerald-400"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-c_prs" value="${d.c_prs}" class="bg-black/40 border border-white/10 p-1 w-full text-center text-emerald-200 opacity-50"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-f_cnt" value="${d.f_cnt}" class="bg-black/40 border border-white/10 p-1 w-full text-center text-amber-400"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-f_prs" value="${d.f_prs}" class="bg-black/40 border border-white/10 p-1 w-full text-center text-amber-200 opacity-50"></td>
+                </tr>`;
+            }).join('');
+        }
+
+        window.openPastDataModal = () => {
+            renderModalTable();
+            document.getElementById('past-modal').classList.add('active');
+        };
+
+        window.closePastDataModal = () => document.getElementById('past-modal').classList.remove('active');
+
+        window.savePastData = async () => {
+            months.forEach((_, i) => {
+                const key = `${currentModalYear}_${i}`;
+                statsData[key] = {
+                    t_cnt: Number(document.getElementById(`in-${key}-t_cnt`).value),
+                    t_prs: Number(document.getElementById(`in-${key}-t_prs`).value),
+                    c_cnt: Number(document.getElementById(`in-${key}-c_cnt`).value),
+                    c_prs: Number(document.getElementById(`in-${key}-c_prs`).value),
+                    f_cnt: Number(document.getElementById(`in-${key}-f_cnt`).value),
+                    f_prs: Number(document.getElementById(`in-${key}-f_prs`).value)
+                };
+            });
+            try { 
+                await setDoc(doc(db, "settings", "management_stats_v2"), statsData); 
+                alert("マスターデータを保存しました。分析結果を更新します。"); 
+                closePastDataModal();
+                updateDashboard();
+            } catch (e) { alert("保存エラー: " + e.message); }
+        };
 
         function updateDashboard() {
             const fy = document.getElementById('fiscal-year-select').value;
@@ -163,45 +233,47 @@
                 return resFY.toString() === fy;
             });
 
-            // カード集計
-            let users = 0, sales = 0, afterHours = 0, targetCapacity = 0;
-            
+            let users = 0, sales = 0, afterHours = 0;
             fyData.forEach(r => {
                 const d = r.createdAt.toDate();
                 const m = d.getMonth() + 1;
                 const mIdx = m >= 4 ? m - 4 : m + 8;
                 if(mIdx.toString() !== targetM) return;
-                
                 const cName = r.courseName || "";
                 if(filterC !== 'all' && !cName.includes(filterC)) return;
 
                 users++;
-                // 売上加算
                 if(cName.includes("玉掛")) sales += prices["玉掛け"];
                 else if(cName.includes("クレーン")) sales += prices["クレーン"];
                 else if(cName.includes("31H")) sales += prices["31H"];
                 else if(cName.includes("11H")) sales += prices["11H"];
                 else sales += prices["その他"];
 
-                // 24時間実績（8:00-17:00以外）
                 const hour = d.getHours();
                 if(hour < 8 || hour >= 17) afterHours++;
             });
 
-            // 目標達成率計算 (開催回数 × 定員)
-            if(filterC !== 'all') {
-                const count = statsData.plan?.[`${fy}_${targetM}`] || 0;
-                targetCapacity = count * (capacityMap[filterC] || 10);
-            } else {
-                const count = statsData.plan?.[`${fy}_${targetM}`] || 0;
-                targetCapacity = count * 8; // 全体は平均8名で仮定
+            // 達成率と成長率の計算
+            let planCap = 0, pastCount = 0;
+            const sKey = `${fy}_${targetM}`, pKey = `${fy-1}_${targetM}`;
+            const s = statsData[sKey] || {}, p = statsData[pKey] || {};
+
+            if(filterC === '玉掛け') { planCap = (s.t_cnt||0)*8; pastCount = p.t_prs||0; }
+            else if(filterC === 'クレーン') { planCap = (s.c_cnt||0)*6; pastCount = p.c_prs||0; }
+            else if(filterC === 'フォーク') { planCap = (s.f_cnt||0)*10; pastCount = p.f_prs||0; }
+            else {
+                planCap = ((s.t_cnt||0)*8) + ((s.c_cnt||0)*6) + ((s.f_cnt||0)*10);
+                pastCount = (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0);
             }
-            const achievement = targetCapacity > 0 ? ((users / targetCapacity) * 100).toFixed(1) : "--";
+
+            const achievement = planCap > 0 ? ((users / planCap) * 100).toFixed(1) : "--";
+            const growth = pastCount > 0 ? ((users / pastCount) * 100).toFixed(1) : "--";
 
             document.getElementById('card-users').innerHTML = users + ' <span class="text-xs opacity-40">名</span>';
             document.getElementById('card-sales').innerHTML = '¥' + sales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
             document.getElementById('card-afterhours').innerHTML = afterHours + ' <span class="text-xs opacity-40">件</span>';
             document.getElementById('card-target').innerHTML = achievement + ' <span class="text-xs opacity-40">%</span>';
+            document.getElementById('card-growth').innerHTML = growth + ' <span class="text-xs opacity-40">%</span>';
 
             renderCharts(fy, fyData);
         }
@@ -226,7 +298,10 @@
                         { label: '玉掛け', data: counts['玉掛け'], borderColor: '#00a2ff', tension: 0.4 },
                         { label: 'フォーク', data: counts['フォーク'], borderColor: '#10b981', tension: 0.4 },
                         { label: 'クレーン', data: counts['クレーン'], borderColor: '#f59e0b', tension: 0.4 },
-                        { label: '前年合計実績', data: months.map((_, i) => statsData.past[`${fy-1}_${i}`] || 0), borderColor: 'rgba(255,255,255,0.1)', borderDash: [5, 5], tension: 0 }
+                        { label: '前年実績合計', data: months.map((_, i) => {
+                            const p = statsData[`${fy-1}_${i}`] || {};
+                            return (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0);
+                        }), borderColor: 'rgba(255,255,255,0.1)', borderDash: [5, 5], tension: 0 }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#64748b' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }, x: { grid: { display: false }, ticks: { color: '#64748b' } } } }
@@ -244,32 +319,6 @@
             });
         }
 
-        window.openPastDataModal = () => {
-            const fy = document.getElementById('fiscal-year-select').value;
-            const pastCont = document.getElementById('past-input-container');
-            const planCont = document.getElementById('plan-input-container');
-            
-            pastCont.innerHTML = months.map((m, i) => `<div class="input-group"><span class="block text-[9px] text-slate-500 mb-1">${fy-1}年 ${m}</span><input type="number" id="past-${fy-1}-${i}" value="${statsData.past[`${fy-1}_${i}`] || 0}"></div>`).join('');
-            planCont.innerHTML = months.map((m, i) => `<div class="input-group"><span class="block text-[9px] text-slate-500 mb-1">${fy}年 ${m}回数</span><input type="number" id="plan-${fy}-${i}" value="${statsData.plan[`${fy}_${i}`] || 0}"></div>`).join('');
-            
-            document.getElementById('past-modal').classList.add('active');
-        };
-
-        window.savePastData = async () => {
-            const fy = document.getElementById('fiscal-year-select').value;
-            months.forEach((_, i) => {
-                statsData.past[`${fy-1}_${i}`] = Number(document.getElementById(`past-${fy-1}-${i}`).value);
-                statsData.plan[`${fy}_${i}`] = Number(document.getElementById(`plan-${fy}-${i}`).value);
-            });
-            try { 
-                await setDoc(doc(db, "settings", "management_stats"), statsData); 
-                alert("データを更新しました！"); 
-                document.getElementById('past-modal').classList.remove('active');
-                updateDashboard(); 
-            } catch (e) { alert("エラー: " + e.message); }
-        };
-
-        window.closePastDataModal = () => document.getElementById('past-modal').classList.remove('active');
         document.getElementById('fiscal-year-select').addEventListener('change', updateDashboard);
         document.getElementById('target-month-select').addEventListener('change', updateDashboard);
         document.getElementById('course-filter').addEventListener('change', updateDashboard);
