@@ -482,6 +482,7 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
                             ${editRow("会社住所（住所）", "compAddress", r.compAddress)}
                             ${editRow("助成金利用", "subsidy", r.subsidy)}
                             ${editRow("領収書宛名", "receiptName", r.receiptName)}
+                            ${editRow("入金日 (M/D)", "paymentDate", r.paymentDate)}
                             <div class="md:col-span-2 border-t border-white/5 my-4 pt-2 text-sky-600 text-[10px] font-black uppercase italic tracking-widest">Qualification / Exemptions</div>
                             ${editRow("免除区分", "exType", r.exType)}
                             ${editRow("修了証/免許番号", "exNo", r.exNoA || r.exNo || r.licNo)}
@@ -837,6 +838,7 @@ window.saveNewReservation = async () => {
                 compAddress: document.getElementById('edit-compAddress').value,
                 subsidy: document.getElementById('edit-subsidy').value,
                 receiptName: document.getElementById('edit-receiptName').value,
+                paymentDate: document.getElementById('edit-paymentDate').value,
                 exType: document.getElementById('edit-exType').value,
                 exNo: document.getElementById('edit-exNo').value,
                 exInfo: document.getElementById('edit-exInfo').value,
