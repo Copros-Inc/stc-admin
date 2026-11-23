@@ -6,108 +6,97 @@
     <title>Dashboard | STC 管理画面</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- ★グラフライブラリ Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <link rel="stylesheet" href="css/common.css">
     <script src="js/common.js"></script>
-
     <style>
-        .stat-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 25px; position: relative; overflow: hidden; }
-        .stat-number { font-family: 'Montserrat'; font-size: 2.2rem; font-weight: 900; color: #fff; font-style: italic; z-index: 1; position: relative; }
-        .stat-label { font-size: 0.65rem; font-weight: 900; color: #64748b; text-transform: uppercase; tracking: 0.1em; z-index: 1; position: relative; }
-        .stat-icon { position: absolute; right: -10px; bottom: -10px; font-size: 4rem; color: rgba(255,255,255,0.03); transform: rotate(-15deg); }
-        
-        .chart-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 30px; padding: 30px; margin-bottom: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-        
-        .past-data-input { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; font-size: 0.8rem; }
-        .past-data-input input { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 5px; width: 60px; border-radius: 5px; text-align: center; }
+        .stat-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 25px; position: relative; }
+        .stat-number { font-family: 'Montserrat'; font-size: 2.2rem; font-weight: 900; color: #fff; font-style: italic; }
+        .stat-label { font-size: 0.65rem; font-weight: 900; color: #64748b; text-transform: uppercase; tracking: 0.1em; }
+        .chart-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 30px; padding: 30px; margin-bottom: 30px; }
+        .past-data-input { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 12px; }
+        .past-data-input input { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 5px; width: 100%; border-radius: 5px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="main-content">
-        <div class="flex justify-between items-end mb-10">
+        <div class="flex justify-between items-end mb-8">
             <div>
-                <h1 class="admin-page-title">Operational Dashboard</h1>
-                <p class="admin-page-subtitle">年度集計・コース別推移・前年対比の視覚化</p>
+                <h1 class="admin-page-title">Management Analysis</h1>
+                <p class="admin-page-subtitle">月次実績・前年対比・年度計画の策定補助</p>
             </div>
-            <div class="flex gap-4">
+        </div>
+
+        <!-- 分析フィルター -->
+        <div class="bg-white/5 border border-white/5 p-6 rounded-3xl mb-10 flex flex-wrap items-center justify-center gap-6">
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-black text-slate-500 italic uppercase">Fiscal Year</span>
                 <select id="fiscal-year-select" class="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 font-bold text-sky-400 outline-none focus:border-sky-500 transition-all">
                     <option value="2026">2026年度 (R8)</option>
                     <option value="2025">2025年度 (R7)</option>
                 </select>
             </div>
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-black text-slate-500 italic uppercase">Target Month</span>
+                <select id="target-month-select" class="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 font-bold text-sky-400 outline-none focus:border-sky-500 transition-all">
+                    <option value="all">年度通期 (4月-3月)</option>
+                    <option value="0">4月</option><option value="1">5月</option><option value="2">6月</option><option value="3">7月</option>
+                    <option value="4">8月</option><option value="5">9月</option><option value="6">10月</option><option value="7">11月</option>
+                    <option value="8">12月</option><option value="9">1月</option><option value="10">2月</option><option value="11">3月</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-black text-slate-500 italic uppercase">Course</span>
+                <select id="course-filter" class="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 font-bold text-sky-400 outline-none focus:border-sky-500 transition-all">
+                    <option value="all">すべての講習</option>
+                    <option value="玉掛け">玉掛け技能講習</option>
+                    <option value="クレーン">小型移動式クレーン</option>
+                    <option value="フォーク">フォークリフト運転</option>
+                    <option value="その他">その他</option>
+                </select>
+            </div>
         </div>
 
-        <!-- 重要指標サマリー -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <!-- 分析サマリー -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div class="stat-card border-l-4 border-sky-500">
-                <div class="stat-label">年度累計 受講者数</div>
-                <div class="stat-number" id="sum-total">0 <span class="text-xs italic opacity-50">名</span></div>
-                <i class="fas fa-users stat-icon"></i>
+                <div class="stat-label">受講者数 (Selected)</div>
+                <div class="stat-number" id="card-users">0 <span class="text-xs italic opacity-50">名</span></div>
             </div>
             <div class="stat-card border-l-4 border-emerald-500">
-                <div class="stat-label">前月比 成長率</div>
-                <div class="stat-number" id="growth-rate">0 <span class="text-xs italic opacity-50">%</span></div>
-                <i class="fas fa-chart-line stat-icon"></i>
+                <div class="stat-label">売上合計 (Tax/Text Incl.)</div>
+                <div class="stat-number text-emerald-400" id="card-sales">¥0 <span class="text-xs italic opacity-50">-</span></div>
             </div>
-            <div class="stat-card border-l-4 border-amber-500">
-                <div class="stat-label">未入金 合計</div>
-                <div class="stat-number" id="sum-unpaid">0 <span class="text-xs italic opacity-50">件</span></div>
-                <i class="fas fa-wallet stat-icon"></i>
-            </div>
-            <div class="stat-card border-l-4 border-rose-500">
-                <div class="stat-label">キャンセル待ち</div>
-                <div class="stat-number" id="sum-waiting">0 <span class="text-xs italic opacity-50">名</span></div>
-                <i class="fas fa-clock stat-icon"></i>
+            <div class="stat-card border-l-4 border-purple-500">
+                <div class="stat-label">前年同月比 成長率</div>
+                <div class="stat-number text-purple-400" id="card-growth">-- <span class="text-xs italic opacity-50">%</span></div>
             </div>
         </div>
 
-        <!-- グラフエリア -->
         <div class="chart-container">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-[900] italic text-sky-400 uppercase tracking-tighter">Yearly Performance (Apr - Mar)</h3>
-                <div class="flex gap-3">
-                    <button onclick="toggleChartType('bar')" class="text-[10px] font-black border border-white/20 px-3 py-1 rounded-full hover:bg-white/10 transition">BAR</button>
-                    <button onclick="toggleChartType('line')" class="text-[10px] font-black border border-white/20 px-3 py-1 rounded-full hover:bg-white/10 transition text-sky-400">LINE</button>
-                </div>
-            </div>
-            <div style="height: 400px; position: relative;">
-                <canvas id="mainChart"></canvas>
-            </div>
+            <h3 class="font-[900] italic text-sky-400 uppercase tracking-tighter mb-6">Course performance trends</h3>
+            <div style="height: 400px;"><canvas id="mainChart"></canvas></div>
         </div>
 
-        <!-- 下段：過去データ補完 & コース別内訳 -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- コース別内訳（円グラフ） -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-1 stat-card">
                 <h3 class="stat-label mb-6 text-center text-sky-400">Course Share</h3>
                 <canvas id="shareChart"></canvas>
             </div>
-
-            <!-- 過去データ直接入力（前年対比用） -->
-            <div class="lg:col-span-2 stat-card">
-                <h3 class="stat-label mb-6 text-sky-400">Data Supplement / 過去データの補完</h3>
-                <p class="text-[10px] text-slate-500 mb-4 italic">※ Firestoreにデータがない期間の数値を手動入力して、グラフの対比を有効にします。</p>
-                <div id="past-data-list" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- JSで月別入力欄を生成 -->
-                </div>
-                <button onclick="savePastData()" class="w-full mt-6 bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-xl font-black italic transition text-sm">
-                    数値を保存してグラフを更新
-                </button>
+            <div class="lg:col-span-3 stat-card">
+                <h3 class="stat-label mb-6 text-sky-400 font-black">Data Supplement / 前年度受講者数の入力</h3>
+                <div id="past-data-list" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
+                <button onclick="savePastData()" class="w-full mt-6 bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-xl font-black italic transition text-sm shadow-lg shadow-sky-600/20">数値を保存して前年比較を有効にする</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", 
-            storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" 
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCrRf1MMCkR_dTIT4mpz2MWdNPJZt3GpYw", authDomain: "stc-hp.firebaseapp.com", projectId: "stc-hp", storageBucket: "stc-hp.firebasestorage.app", messagingSenderId: "795332931918", appId: "1:795332931918:web:dee7ea9d9fbe0ab0942e1f" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -116,15 +105,12 @@
         let reservations = [];
         let pastData = {};
         const months = ["4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月"];
+        const prices = { "玉掛け": 27000, "クレーン": 37000, "31H": 32000, "11H": 22000, "その他": 15000 };
 
-        // 初期化
         signInAnonymously(auth).then(async () => {
-            // 過去データの読み込み
             const pastDoc = await getDoc(doc(db, "settings", "past_statistics"));
             if(pastDoc.exists()) pastData = pastDoc.data();
             renderPastDataInputs();
-
-            // 予約データのリアルタイム取得
             onSnapshot(collection(db, "reservations"), (snap) => {
                 reservations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 updateDashboard();
@@ -133,85 +119,89 @@
 
         function updateDashboard() {
             const fy = document.getElementById('fiscal-year-select').value;
-            const filtered = reservations.filter(r => r.status !== 'revoked');
-            
-            // サマリー計算
-            document.getElementById('sum-total').innerText = filtered.length;
-            document.getElementById('sum-unpaid').innerText = filtered.filter(r => r.paymentStatus !== 'paid').length;
-            document.getElementById('sum-waiting').innerText = filtered.filter(r => r.status === 'waiting').length;
+            const targetM = document.getElementById('target-month-select').value;
+            const filterC = document.getElementById('course-filter').value;
 
-            renderCharts(fy);
-        }
-
-        function renderCharts(fy) {
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            const dataSets = {
-                '玉掛け': new Array(12).fill(0),
-                'フォーク': new Array(12).fill(0),
-                'クレーン': new Array(12).fill(0),
-                'その他': new Array(12).fill(0),
-                '前年合計': months.map((m, i) => pastData[`${fy-1}_${i}`] || 0)
-            };
-
-            // Firestoreデータの集計（4月=index0, ... 3月=index11）
-            reservations.forEach(r => {
-                if(!r.createdAt || r.status === 'revoked') return;
+            // 1. データ集計（年度内 & 有効データ）
+            const fyData = reservations.filter(r => {
+                if(!r.createdAt || r.status === 'revoked') return false;
                 const d = r.createdAt.toDate();
-                const m = d.getMonth() + 1; // 1-12
+                const m = d.getMonth() + 1;
                 const y = d.getFullYear();
-                
-                // 年度判定（4月以降はその年、3月までは前年扱い）
                 const resFY = m >= 4 ? y : y - 1;
-                if(resFY.toString() !== fy) return;
-
-                const monthIdx = m >= 4 ? m - 4 : m + 8;
-                const name = r.courseName || "";
-                if(name.includes("玉掛")) dataSets['玉掛け'][monthIdx]++;
-                else if(name.includes("フォーク")) dataSets['フォーク'][monthIdx]++;
-                else if(name.includes("クレーン")) dataSets['クレーン'][monthIdx]++;
-                else dataSets['その他'][monthIdx]++;
+                return resFY.toString() === fy;
             });
 
+            // 2. カード用集計（月・コースフィルター適用）
+            const cardFiltered = fyData.filter(r => {
+                const d = r.createdAt.toDate();
+                const m = d.getMonth() + 1;
+                const mIdx = m >= 4 ? m - 4 : m + 8;
+                const matchM = targetM === 'all' || mIdx.toString() === targetM;
+                const matchC = filterC === 'all' || (r.courseName || "").includes(filterC);
+                return matchM && matchC;
+            });
+
+            // 売上計算
+            const totalSales = cardFiltered.reduce((sum, r) => {
+                const name = r.courseName || "";
+                if(name.includes("玉掛")) return sum + prices["玉掛け"];
+                if(name.includes("クレーン")) return sum + prices["クレーン"];
+                if(name.includes("31H")) return sum + prices["31H"];
+                if(name.includes("11H")) return sum + prices["11H"];
+                return sum + prices["その他"];
+            }, 0);
+
+            // 前年比
+            let growth = "--";
+            if(targetM !== 'all') {
+                const pastVal = pastData[`${fy-1}_${targetM}`] || 0;
+                if(pastVal > 0) growth = ((cardFiltered.length / pastVal) * 100).toFixed(1);
+            }
+
+            document.getElementById('card-users').innerText = cardFiltered.length + " 名";
+            document.getElementById('card-sales').innerText = "¥" + totalSales.toLocaleString() + "-";
+            document.getElementById('card-growth').innerText = growth + " %";
+
+            renderCharts(fy, fyData);
+        }
+
+        function renderCharts(fy, fyData) {
+            const counts = { '玉掛け': new Array(12).fill(0), 'フォーク': new Array(12).fill(0), 'クレーン': new Array(12).fill(0), 'その他': new Array(12).fill(0) };
+            fyData.forEach(r => {
+                const d = r.createdAt.toDate();
+                const m = d.getMonth() + 1;
+                const mIdx = m >= 4 ? m - 4 : m + 8;
+                const name = r.courseName || "";
+                if(name.includes("玉掛")) counts['玉掛け'][mIdx]++;
+                else if(name.includes("フォーク")) counts['フォーク'][mIdx]++;
+                else if(name.includes("クレーン")) counts['クレーン'][mIdx]++;
+                else counts['その他'][mIdx]++;
+            });
+
+            const ctx = document.getElementById('mainChart').getContext('2d');
             if(mainChart) mainChart.destroy();
             mainChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: months,
                     datasets: [
-                        { label: '玉掛け', data: dataSets['玉掛け'], borderColor: '#00a2ff', tension: 0.4, fill: false },
-                        { label: 'フォーク', data: dataSets['フォーク'], borderColor: '#10b981', tension: 0.4, fill: false },
-                        { label: 'クレーン', data: dataSets['クレーン'], borderColor: '#f59e0b', tension: 0.4, fill: false },
-                        { label: '前年実績', data: dataSets['前年合計'], borderColor: 'rgba(255,255,255,0.2)', borderDash: [5, 5], tension: 0, fill: true, backgroundColor: 'rgba(255,255,255,0.02)' }
+                        { label: '玉掛け', data: counts['玉掛け'], borderColor: '#00a2ff', tension: 0.4 },
+                        { label: 'フォーク', data: counts['フォーク'], borderColor: '#10b981', tension: 0.4 },
+                        { label: 'クレーン', data: counts['クレーン'], borderColor: '#f59e0b', tension: 0.4 },
+                        { label: '前年合計', data: months.map((_, i) => pastData[`${fy-1}_${i}`] || 0), borderColor: 'rgba(255,255,255,0.15)', borderDash: [5, 5], fill: true, backgroundColor: 'rgba(255,255,255,0.02)', tension: 0 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#64748b', font: { weight: 'bold' } } } },
-                    scales: {
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
-                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#64748b' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }, x: { ticks: { color: '#64748b' } } } }
             });
 
-            // 円グラフ（シェア）
             const shareCtx = document.getElementById('shareChart').getContext('2d');
             if(shareChart) shareChart.destroy();
             shareChart = new Chart(shareCtx, {
                 type: 'doughnut',
                 data: {
                     labels: ['玉掛け', 'フォーク', 'クレーン', 'その他'],
-                    datasets: [{
-                        data: [
-                            dataSets['玉掛け'].reduce((a,b)=>a+b,0),
-                            dataSets['フォーク'].reduce((a,b)=>a+b,0),
-                            dataSets['クレーン'].reduce((a,b)=>a+b,0),
-                            dataSets['その他'].reduce((a,b)=>a+b,0)
-                        ],
-                        backgroundColor: ['#00a2ff', '#10b981', '#f59e0b', '#64748b'],
-                        borderWidth: 0
-                    }]
+                    datasets: [{ data: Object.values(counts).map(arr => arr.reduce((a,b)=>a+b,0)), backgroundColor: ['#00a2ff', '#10b981', '#f59e0b', '#64748b'], borderWidth: 0 }]
                 },
                 options: { plugins: { legend: { position: 'bottom', labels: { color: '#64748b' } } } }
             });
@@ -220,30 +210,18 @@
         function renderPastDataInputs() {
             const container = document.getElementById('past-data-list');
             const fy = document.getElementById('fiscal-year-select').value;
-            container.innerHTML = months.map((m, i) => `
-                <div class="past-data-input flex flex-col gap-2">
-                    <span class="font-black text-slate-500 text-[9px] uppercase">${fy-1}年 ${m}</span>
-                    <input type="number" id="past-${fy-1}-${i}" value="${pastData[`${fy-1}_${i}`] || 0}">
-                </div>
-            `).join('');
+            container.innerHTML = months.map((m, i) => `<div class="past-data-input"><span class="block text-[8px] text-slate-500 mb-1">${fy-1} ${m}</span><input type="number" id="past-${fy-1}-${i}" value="${pastData[`${fy-1}_${i}`] || 0}"></div>`).join('');
         }
 
         window.savePastData = async () => {
             const fy = document.getElementById('fiscal-year-select').value;
-            months.forEach((m, i) => {
-                pastData[`${fy-1}_${i}`] = Number(document.getElementById(`past-${fy-1}-${i}`).value);
-            });
-            try {
-                await setDoc(doc(db, "settings", "past_statistics"), pastData);
-                alert("過去の集計データを保存しました！");
-                updateDashboard();
-            } catch (e) { alert("保存エラー: " + e.message); }
+            months.forEach((m, i) => pastData[`${fy-1}_${i}`] = Number(document.getElementById(`past-${fy-1}-${i}`).value));
+            try { await setDoc(doc(db, "settings", "past_statistics"), pastData); alert("保存しました！"); updateDashboard(); } catch (e) { alert("エラー: " + e.message); }
         };
 
-        document.getElementById('fiscal-year-select').addEventListener('change', () => {
-            renderPastDataInputs();
-            updateDashboard();
-        });
+        document.getElementById('fiscal-year-select').addEventListener('change', () => { renderPastDataInputs(); updateDashboard(); });
+        document.getElementById('target-month-select').addEventListener('change', updateDashboard);
+        document.getElementById('course-filter').addEventListener('change', updateDashboard);
     </script>
 </body>
 </html>
