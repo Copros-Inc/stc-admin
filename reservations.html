@@ -457,6 +457,10 @@ document.getElementById('btn-crop-v-save').onclick = async () => {
     <p class="text-white font-bold text-xs">${r.courseName || ''}</p>
     <input type="text" id="edit-courseDate" value="${r.courseDate || ''}" class="bg-transparent text-sky-300/60 font-en text-[10px] w-full outline-none focus:text-sky-300 border-b border-sky-300/20 transition mt-2">
 </div>
+<div class="bg-amber-500/5 p-6 rounded-[2rem] border border-amber-500/10 text-left mt-4">
+    <p class="text-amber-500 font-black italic text-[9px] uppercase mb-2 tracking-widest">Memo / 備考</p>
+    <textarea id="edit-memo" class="bg-transparent text-white font-bold text-xs w-full h-24 outline-none focus:border-amber-500/50 border-b border-white/10 transition resize-none" placeholder="受講生に関する特記事項や電話連絡のメモなど">${r.memo || ''}</textarea>
+</div>
 </div>
                 <!-- 右側：編集フォーム -->
                 <div class="md:col-span-2">
@@ -839,6 +843,7 @@ window.saveNewReservation = async () => {
                 subsidy: document.getElementById('edit-subsidy').value,
                 receiptName: document.getElementById('edit-receiptName').value,
                 paymentDate: document.getElementById('edit-paymentDate').value,
+                memo: document.getElementById('edit-memo').value,
                 exType: document.getElementById('edit-exType').value,
                 exNo: document.getElementById('edit-exNo').value,
                 exInfo: document.getElementById('edit-exInfo').value,
