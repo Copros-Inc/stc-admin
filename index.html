@@ -11,28 +11,26 @@
     <script src="js/common.js"></script>
     <style>
         .stat-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 25px; transition: 0.3s; }
-        .stat-card:hover { transform: translateY(-3px); border-color: rgba(0, 162, 255, 0.2); }
         .stat-number { font-family: 'Montserrat'; font-size: 2.2rem; font-weight: 900; color: #fff; font-style: italic; }
         .stat-label { font-size: 0.65rem; font-weight: 900; color: #64748b; text-transform: uppercase; tracking: 0.1em; }
         .chart-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 30px; padding: 30px; margin-bottom: 30px; }
-        
-        /* 入力用モーダル */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: #0f172a; border: 2px solid #00a2ff; border-radius: 2.5rem; padding: 40px; width: 95%; max-width: 900px; max-height: 85vh; overflow-y: auto; }
-        .past-input-grid input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 6px; width: 100%; border-radius: 8px; text-align: center; font-family: 'Montserrat'; font-weight: bold; }
+        .modal-content { background: #0f172a; border: 2px solid #00a2ff; border-radius: 2.5rem; padding: 40px; width: 95%; max-width: 1000px; max-height: 85vh; overflow-y: auto; }
+        .input-group { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; }
+        .input-group input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%; border-radius: 8px; text-align: center; padding: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="main-content">
         <div class="flex justify-between items-end mb-8">
             <div>
-                <h1 class="admin-page-title">Operational Intelligence</h1>
-                <p class="admin-page-subtitle">月次実績分析と次期年度計画のシミュレーション</p>
+                <h1 class="admin-page-title">Management Analysis</h1>
+                <p class="admin-page-subtitle">24時間受付実績と年度目標達成率の可視化</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="openPastDataModal()" class="bg-white/5 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 px-5 py-2 rounded-xl font-black italic text-xs transition flex items-center gap-2">
-                    <i class="fas fa-database"></i> 過去・目標値の編集
+                    <i class="fas fa-edit"></i> 計画・実績データの編集
                 </button>
                 <select id="fiscal-year-select" class="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 font-bold text-sky-400 outline-none focus:border-sky-500 transition-all">
                     <option value="2026">2026年度 (R8)</option>
@@ -41,19 +39,39 @@
             </div>
         </div>
 
+        <!-- カード -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div class="stat-card border-l-4 border-sky-500">
+                <div class="stat-label">月間 受講者数</div>
+                <div class="stat-number" id="card-users">0 <span class="text-xs italic opacity-40">名</span></div>
+            </div>
+            <div class="stat-card border-l-4 border-emerald-500">
+                <div class="stat-label">目標達成率 (満席計画比)</div>
+                <div class="stat-number text-emerald-400" id="card-target">0 <span class="text-xs italic opacity-40">%</span></div>
+            </div>
+            <div class="stat-card border-l-4 border-amber-500">
+                <div class="stat-label">24時間稼働実績 (時間外申込)</div>
+                <div class="stat-number text-amber-400" id="card-afterhours">0 <span class="text-xs italic opacity-40">件</span></div>
+            </div>
+            <div class="stat-card border-l-4 border-purple-500">
+                <div class="stat-label">売上合計 (概算)</div>
+                <div class="stat-number text-purple-400" id="card-sales">¥0 <span class="text-xs italic opacity-40">-</span></div>
+            </div>
+        </div>
+
         <!-- フィルター -->
-        <div class="bg-white/5 border border-white/5 p-6 rounded-[2rem] mb-10 flex flex-wrap items-center justify-center gap-8 shadow-inner">
+        <div class="bg-white/5 border border-white/5 p-6 rounded-3xl mb-10 flex flex-wrap items-center justify-center gap-8">
             <div class="flex items-center gap-4">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Target Month</span>
+                <span class="text-[10px] font-black text-slate-500 uppercase italic">Target Month</span>
                 <select id="target-month-select" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-2 font-black text-sky-400 outline-none focus:border-sky-500 transition-all">
-                    <option value="all">年度通期累計 (4月 - 3月)</option>
+                    <!-- JSで初期化時に今日の日付をセット -->
                     <option value="0">4月</option><option value="1">5月</option><option value="2">6月</option><option value="3">7月</option>
                     <option value="4">8月</option><option value="5">9月</option><option value="6">10月</option><option value="7">11月</option>
                     <option value="8">12月</option><option value="9">1月</option><option value="10">2月</option><option value="11">3月</option>
                 </select>
             </div>
             <div class="flex items-center gap-4">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Course Filter</span>
+                <span class="text-[10px] font-black text-slate-500 uppercase italic">Course Filter</span>
                 <select id="course-filter" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-2 font-black text-sky-400 outline-none focus:border-sky-500 transition-all">
                     <option value="all">すべての講習を表示</option>
                     <option value="玉掛け">玉掛け技能講習</option>
@@ -63,25 +81,9 @@
             </div>
         </div>
 
-        <!-- カード -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="stat-card border-l-4 border-sky-500">
-                <div class="stat-label">受講者数</div>
-                <div class="stat-number" id="card-users">0 <span class="text-xs italic opacity-40">名</span></div>
-            </div>
-            <div class="stat-card border-l-4 border-emerald-500">
-                <div class="stat-label">売上実績 (概算)</div>
-                <div class="stat-number text-emerald-400" id="card-sales">¥0 <span class="text-xs italic opacity-40">-</span></div>
-            </div>
-            <div class="stat-card border-l-4 border-purple-500">
-                <div class="stat-label">前年同期比 (受講者)</div>
-                <div class="stat-number text-purple-400" id="card-growth">-- <span class="text-xs italic opacity-40">%</span></div>
-            </div>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-3 chart-container">
-                <h3 class="font-[900] italic text-sky-400 uppercase tracking-tighter mb-8">Performance Trend</h3>
+                <h3 class="font-[900] italic text-sky-400 uppercase tracking-tighter mb-8">Monthly Trend Comparison</h3>
                 <div style="height: 400px;"><canvas id="mainChart"></canvas></div>
             </div>
             <div class="lg:col-span-1 stat-card">
@@ -91,30 +93,28 @@
         </div>
     </div>
 
-    <!-- 過去・目標データ入力モーダル -->
+    <!-- 過去・計画データ入力モーダル -->
     <div id="past-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
-                <h2 class="text-2xl font-black italic text-sky-400">Data Supplement & Target Setting</h2>
+                <h2 class="text-2xl font-black italic text-sky-400">Planning & Historical Data</h2>
                 <button onclick="closePastDataModal()" class="text-slate-500 hover:text-white text-3xl">&times;</button>
             </div>
             
-            <p class="text-xs text-slate-400 mb-6 italic leading-relaxed">
-                年度別の受講者数を講習ごとに入力・編集します。9月以前のデータがない期間の補完や、前年度実績の修正を行えます。
-            </p>
-
-            <div class="space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- 左：前年度実績（前年比較用） -->
                 <div>
-                    <h3 id="modal-fy-label" class="text-xs font-black text-slate-200 uppercase tracking-widest mb-4">2025年度 実績データ</h3>
-                    <div id="past-input-container" class="grid grid-cols-3 md:grid-cols-6 gap-4 past-input-grid">
-                        <!-- JSで生成 -->
-                    </div>
+                    <h3 class="text-xs font-black text-amber-500 uppercase mb-4">前年度 受講者数実績 (比較用)</h3>
+                    <div id="past-input-container" class="grid grid-cols-3 gap-3"></div>
+                </div>
+                <!-- 右：今年度開催計画（目標達成率用） -->
+                <div>
+                    <h3 class="text-xs font-black text-emerald-500 uppercase mb-4">今年度 講習開催予定回数 (目標計算用)</h3>
+                    <div id="plan-input-container" class="grid grid-cols-3 gap-3"></div>
                 </div>
             </div>
 
-            <button onclick="savePastData()" class="w-full mt-10 bg-sky-600 hover:bg-sky-500 text-white py-5 rounded-2xl font-black italic transition shadow-xl shadow-sky-600/20">
-                データを保存して分析結果を更新する
-            </button>
+            <button onclick="savePastData()" class="w-full mt-10 bg-sky-600 hover:bg-sky-500 text-white py-5 rounded-2xl font-black italic transition">データを保存してダッシュボードを更新</button>
         </div>
     </div>
 
@@ -130,14 +130,20 @@
 
         let mainChart, shareChart;
         let reservations = [];
-        let pastData = {};
+        let statsData = { past: {}, plan: {} };
         const months = ["4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月"];
         const prices = { "玉掛け": 27000, "クレーン": 37000, "31H": 32000, "11H": 22000, "その他": 15000 };
+        const capacityMap = { "玉掛け": 8, "クレーン": 6, "フォーク": 10 };
 
         signInAnonymously(auth).then(async () => {
-            const pastDoc = await getDoc(doc(db, "settings", "past_statistics"));
-            if(pastDoc.exists()) pastData = pastDoc.data();
+            const res = await getDoc(doc(db, "settings", "management_stats"));
+            if(res.exists()) statsData = res.data();
             
+            // 今日の月から初期表示月をセット（4月開始indexに変換）
+            const now = new Date();
+            const curM = now.getMonth() + 1;
+            document.getElementById('target-month-select').value = curM >= 4 ? curM - 4 : curM + 8;
+
             onSnapshot(collection(db, "reservations"), (snap) => {
                 reservations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 updateDashboard();
@@ -153,53 +159,61 @@
                 if(!r.createdAt || r.status === 'revoked') return false;
                 const d = r.createdAt.toDate();
                 const m = d.getMonth() + 1;
-                const y = d.getFullYear();
-                const resFY = m >= 4 ? y : y - 1;
+                const resFY = m >= 4 ? d.getFullYear() : d.getFullYear() - 1;
                 return resFY.toString() === fy;
             });
 
-            const cardFiltered = fyData.filter(r => {
+            // カード集計
+            let users = 0, sales = 0, afterHours = 0, targetCapacity = 0;
+            
+            fyData.forEach(r => {
                 const d = r.createdAt.toDate();
                 const m = d.getMonth() + 1;
                 const mIdx = m >= 4 ? m - 4 : m + 8;
-                const matchM = targetM === 'all' || mIdx.toString() === targetM;
-                const matchC = filterC === 'all' || (r.courseName || "").includes(filterC);
-                return matchM && matchC;
+                if(mIdx.toString() !== targetM) return;
+                
+                const cName = r.courseName || "";
+                if(filterC !== 'all' && !cName.includes(filterC)) return;
+
+                users++;
+                // 売上加算
+                if(cName.includes("玉掛")) sales += prices["玉掛け"];
+                else if(cName.includes("クレーン")) sales += prices["クレーン"];
+                else if(cName.includes("31H")) sales += prices["31H"];
+                else if(cName.includes("11H")) sales += prices["11H"];
+                else sales += prices["その他"];
+
+                // 24時間実績（8:00-17:00以外）
+                const hour = d.getHours();
+                if(hour < 8 || hour >= 17) afterHours++;
             });
 
-            const totalSales = cardFiltered.reduce((sum, r) => {
-                const name = r.courseName || "";
-                if(name.includes("玉掛")) return sum + prices["玉掛け"];
-                if(name.includes("クレーン")) return sum + prices["クレーン"];
-                if(name.includes("31H")) return sum + prices["31H"];
-                if(name.includes("11H")) return sum + prices["11H"];
-                return sum + prices["その他"];
-            }, 0);
-
-            let growth = "--";
-            if(targetM !== 'all') {
-                const pastVal = pastData[`${fy-1}_${targetM}`] || 0;
-                if(pastVal > 0) growth = ((cardFiltered.length / pastVal) * 100).toFixed(1);
+            // 目標達成率計算 (開催回数 × 定員)
+            if(filterC !== 'all') {
+                const count = statsData.plan?.[`${fy}_${targetM}`] || 0;
+                targetCapacity = count * (capacityMap[filterC] || 10);
+            } else {
+                const count = statsData.plan?.[`${fy}_${targetM}`] || 0;
+                targetCapacity = count * 8; // 全体は平均8名で仮定
             }
+            const achievement = targetCapacity > 0 ? ((users / targetCapacity) * 100).toFixed(1) : "--";
 
-            document.getElementById('card-users').innerHTML = cardFiltered.length + ' <span class="text-xs italic opacity-40">名</span>';
-            document.getElementById('card-sales').innerHTML = '¥' + totalSales.toLocaleString() + ' <span class="text-xs italic opacity-40">-</span>';
-            document.getElementById('card-growth').innerHTML = growth + ' <span class="text-xs italic opacity-40">%</span>';
+            document.getElementById('card-users').innerHTML = users + ' <span class="text-xs opacity-40">名</span>';
+            document.getElementById('card-sales').innerHTML = '¥' + sales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
+            document.getElementById('card-afterhours').innerHTML = afterHours + ' <span class="text-xs opacity-40">件</span>';
+            document.getElementById('card-target').innerHTML = achievement + ' <span class="text-xs opacity-40">%</span>';
 
             renderCharts(fy, fyData);
         }
 
         function renderCharts(fy, fyData) {
-            const counts = { '玉掛け': new Array(12).fill(0), 'フォーク': new Array(12).fill(0), 'クレーン': new Array(12).fill(0), 'その他': new Array(12).fill(0) };
+            const counts = { '玉掛け': new Array(12).fill(0), 'フォーク': new Array(12).fill(0), 'クレーン': new Array(12).fill(0) };
             fyData.forEach(r => {
                 const d = r.createdAt.toDate();
-                const m = d.getMonth() + 1;
-                const mIdx = m >= 4 ? m - 4 : m + 8;
-                const name = r.courseName || "";
-                if(name.includes("玉掛")) counts['玉掛け'][mIdx]++;
-                else if(name.includes("フォーク")) counts['フォーク'][mIdx]++;
-                else if(name.includes("クレーン")) counts['クレーン'][mIdx]++;
-                else counts['その他'][mIdx]++;
+                const mIdx = d.getMonth() + 1 >= 4 ? d.getMonth() + 1 - 4 : d.getMonth() + 1 + 8;
+                if((r.courseName||"").includes("玉掛")) counts['玉掛け'][mIdx]++;
+                else if((r.courseName||"").includes("フォーク")) counts['フォーク'][mIdx]++;
+                else if((r.courseName||"").includes("クレーン")) counts['クレーン'][mIdx]++;
             });
 
             const ctx = document.getElementById('mainChart').getContext('2d');
@@ -212,10 +226,10 @@
                         { label: '玉掛け', data: counts['玉掛け'], borderColor: '#00a2ff', tension: 0.4 },
                         { label: 'フォーク', data: counts['フォーク'], borderColor: '#10b981', tension: 0.4 },
                         { label: 'クレーン', data: counts['クレーン'], borderColor: '#f59e0b', tension: 0.4 },
-                        { label: '前年合計実績', data: months.map((_, i) => pastData[`${fy-1}_${i}`] || 0), borderColor: 'rgba(255,255,255,0.2)', borderDash: [5, 5], fill: true, backgroundColor: 'rgba(255,255,255,0.02)', tension: 0 }
+                        { label: '前年合計実績', data: months.map((_, i) => statsData.past[`${fy-1}_${i}`] || 0), borderColor: 'rgba(255,255,255,0.1)', borderDash: [5, 5], tension: 0 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#64748b', font: { weight: 'bold' } } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }, x: { grid: { display: false }, ticks: { color: '#64748b' } } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#64748b' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }, x: { grid: { display: false }, ticks: { color: '#64748b' } } } }
             });
 
             const shareCtx = document.getElementById('shareChart').getContext('2d');
@@ -223,39 +237,39 @@
             shareChart = new Chart(shareCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['玉掛け', 'フォーク', 'クレーン', 'その他'],
-                    datasets: [{ data: Object.values(counts).map(arr => arr.reduce((a,b)=>a+b,0)), backgroundColor: ['#00a2ff', '#10b981', '#f59e0b', '#334155'], borderWidth: 0 }]
+                    labels: ['玉掛け', 'フォーク', 'クレーン'],
+                    datasets: [{ data: Object.values(counts).map(a => a.reduce((s,v)=>s+v,0)), backgroundColor: ['#00a2ff', '#10b981', '#f59e0b'], borderWidth: 0 }]
                 },
-                options: { plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } }, cutout: '70%' }
+                options: { plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } }, cutout: '75%' }
             });
         }
 
         window.openPastDataModal = () => {
-            const container = document.getElementById('past-input-container');
             const fy = document.getElementById('fiscal-year-select').value;
-            document.getElementById('modal-fy-label').innerText = `${fy-1}年度 実績データ入力`;
-            container.innerHTML = months.map((m, i) => `
-                <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
-                    <span class="block text-[10px] text-slate-500 font-bold mb-2 text-center">${fy-1}年 ${m}</span>
-                    <input type="number" id="past-${fy-1}-${i}" value="${pastData[`${fy-1}_${i}`] || 0}" class="w-full">
-                </div>
-            `).join('');
+            const pastCont = document.getElementById('past-input-container');
+            const planCont = document.getElementById('plan-input-container');
+            
+            pastCont.innerHTML = months.map((m, i) => `<div class="input-group"><span class="block text-[9px] text-slate-500 mb-1">${fy-1}年 ${m}</span><input type="number" id="past-${fy-1}-${i}" value="${statsData.past[`${fy-1}_${i}`] || 0}"></div>`).join('');
+            planCont.innerHTML = months.map((m, i) => `<div class="input-group"><span class="block text-[9px] text-slate-500 mb-1">${fy}年 ${m}回数</span><input type="number" id="plan-${fy}-${i}" value="${statsData.plan[`${fy}_${i}`] || 0}"></div>`).join('');
+            
             document.getElementById('past-modal').classList.add('active');
         };
 
-        window.closePastDataModal = () => document.getElementById('past-modal').classList.remove('active');
-
         window.savePastData = async () => {
             const fy = document.getElementById('fiscal-year-select').value;
-            months.forEach((m, i) => pastData[`${fy-1}_${i}`] = Number(document.getElementById(`past-${fy-1}-${i}`).value));
+            months.forEach((_, i) => {
+                statsData.past[`${fy-1}_${i}`] = Number(document.getElementById(`past-${fy-1}-${i}`).value);
+                statsData.plan[`${fy}_${i}`] = Number(document.getElementById(`plan-${fy}-${i}`).value);
+            });
             try { 
-                await setDoc(doc(db, "settings", "past_statistics"), pastData); 
-                alert("統計データを保存しました。グラフに反映します。"); 
-                closePastDataModal();
+                await setDoc(doc(db, "settings", "management_stats"), statsData); 
+                alert("データを更新しました！"); 
+                document.getElementById('past-modal').classList.remove('active');
                 updateDashboard(); 
-            } catch (e) { alert("保存エラー: " + e.message); }
+            } catch (e) { alert("エラー: " + e.message); }
         };
 
+        window.closePastDataModal = () => document.getElementById('past-modal').classList.remove('active');
         document.getElementById('fiscal-year-select').addEventListener('change', updateDashboard);
         document.getElementById('target-month-select').addEventListener('change', updateDashboard);
         document.getElementById('course-filter').addEventListener('change', updateDashboard);
