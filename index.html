@@ -67,6 +67,7 @@
             <div class="flex items-center gap-4">
                 <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Target Month</span>
                 <select id="target-month-select" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-2 font-black text-sky-400 outline-none focus:border-sky-500 transition-all">
+                    <option value="all">年度通期累計 (4月-3月)</option>
                     <option value="0">4月</option><option value="1">5月</option><option value="2">6月</option><option value="3">7月</option>
                     <option value="4">8月</option><option value="5">9月</option><option value="6">10月</option><option value="7">11月</option>
                     <option value="8">12月</option><option value="9">1月</option><option value="10">2月</option><option value="11">3月</option>
@@ -209,28 +210,48 @@
             fyData.forEach(r => {
                 const d = r.createdAt.toDate();
                 const mIdx = d.getMonth() + 1 >= 4 ? d.getMonth() + 1 - 4 : d.getMonth() + 1 + 8;
-                if(mIdx.toString() !== targetM) return;
+                
+                // ★修正：'all'の場合は全月、数字の場合はその月だけをカウント
+                if(targetM !== 'all' && mIdx.toString() !== targetM) return;
+                
                 const cName = r.courseName || "";
                 if(filterC !== 'all' && !cName.includes(filterC)) return;
+                
                 users++;
-                if(cName.includes("玉掛")) sales += prices["玉掛け"]; else if(cName.includes("クレーン")) sales += prices["クレーン"]; else if(cName.includes("31H")) sales += prices["31H"]; else if(cName.includes("11H")) sales += prices["11H"]; else sales += prices["その他"];
+                if(cName.includes("玉掛")) sales += prices["玉掛け"]; 
+                else if(cName.includes("クレーン")) sales += prices["クレーン"]; 
+                else if(cName.includes("31H")) sales += prices["31H"]; 
+                else if(cName.includes("11H")) sales += prices["11H"]; 
+                else sales += prices["その他"];
                 const h = d.getHours(); if(h < 8 || h >= 17) afterHours++;
             });
 
-            const s = statsData[`${fy}_${targetM}`] || {}, p = statsData[`${fy-1}_${targetM}`] || {};
+            // ★達成率と成長率の計算（'all'の時は12ヶ月分を合算）
             let planCap = 0, pastP = 0;
-            if(filterC === '玉掛け') { planCap = (s.t_cnt||0)*8; pastP = p.t_prs||0; }
-            else if(filterC === 'クレーン') { planCap = (s.c_cnt||0)*6; pastP = p.c_prs||0; }
-            else if(filterC === 'フォーク') { planCap = (s.f_cnt||0)*10; pastP = p.f_prs||0; }
-            else { planCap = (s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10; pastP = (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0); }
+            if(targetM === 'all') {
+                months.forEach((_, i) => {
+                    const s = statsData[`${fy}_${i}`] || {}, p = statsData[`${fy-1}_${i}`] || {};
+                    if(filterC === '玉掛け') { planCap += (s.t_cnt||0)*8; pastP += p.t_prs||0; }
+                    else if(filterC === 'クレーン') { planCap += (s.c_cnt||0)*6; pastP += p.c_prs||0; }
+                    else if(filterC === 'フォーク') { planCap += (s.f_cnt||0)*10; pastP += p.f_prs||0; }
+                    else { planCap += (s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10; pastP += (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0); }
+                });
+            } else {
+                const s = statsData[`${fy}_${targetM}`] || {}, p = statsData[`${fy-1}_${targetM}`] || {};
+                if(filterC === '玉掛け') { planCap = (s.t_cnt||0)*8; pastP = p.t_prs||0; }
+                else if(filterC === 'クレーン') { planCap = (s.c_cnt||0)*6; pastP = p.c_prs||0; }
+                else if(filterC === 'フォーク') { planCap = (s.f_cnt||0)*10; pastP = p.f_prs||0; }
+                else { planCap = (s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10; pastP = (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0); }
+            }
 
             document.getElementById('card-users').innerHTML = users + ' <span class="text-xs opacity-40">名</span>';
             document.getElementById('card-empty').innerHTML = Math.max(0, planCap - users) + ' <span class="text-xs opacity-40">席</span>';
             document.getElementById('card-target').innerHTML = (planCap > 0 ? ((users/planCap)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
             document.getElementById('card-afterhours').innerHTML = afterHours + ' <span class="text-xs opacity-40">件</span>';
             document.getElementById('card-sales').innerHTML = '¥' + sales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
+            document.getElementById('card-growth').innerHTML = (pastP > 0 ? ((users/pastP)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
+            
             renderCharts(fy, fyData);
-        }
 
         function renderCharts(fy, fyData) {
             const counts = { '玉掛け': new Array(12).fill(0), 'フォーク': new Array(12).fill(0), 'クレーン': new Array(12).fill(0) };
