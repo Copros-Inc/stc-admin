@@ -144,6 +144,11 @@
         let currentModalYear = 2025;
         const months = ["7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月", "4月", "5月", "6月"];
         const prices = { "玉掛け": 27000, "クレーン": 37000, "31H": 32000, "11H": 22000, "その他": 15000 };
+        const courseConfig = {
+            "玉掛け": { color: "#00a2ff" }, // 水色
+            "クレーン": { color: "#f472b6" }, // ピンク
+            "フォーク": { color: "#10b981" }  // 緑
+        };
 
         signInAnonymously(auth).then(async () => {
             const res = await getDoc(doc(db, "settings", "management_stats_v2"));
@@ -209,97 +214,162 @@
             const fy = document.getElementById('fiscal-year-select').value;
             const targetM = document.getElementById('target-month-select').value;
             const filterC = document.getElementById('course-filter').value;
+            
             const fyData = reservations.filter(r => {
                 if(!r.createdAt || r.status === 'revoked') return false;
                 const d = r.createdAt.toDate();
-                const m = d.getMonth() + 1;
-                const resFY = m >= 7 ? d.getFullYear() : d.getFullYear() - 1; // ここを7に変更
-                return resFY.toString() === fy;
+                const resFY = (d.getMonth() + 1 >= 7 ? d.getFullYear() : d.getFullYear() - 1).toString();
+                return resFY === fy;
             });
 
-            let users = 0, sales = 0, afterHours = 0;
-            fyData.forEach(r => {
-                const d = r.createdAt.toDate();
-                const mIdx = d.getMonth() + 1 >= 7 ? d.getMonth() + 1 - 7 : d.getMonth() + 1 + 5;
-                if(targetM !== 'all' && mIdx.toString() !== targetM) return;
-                const cName = r.courseName || "";
-                if(filterC !== 'all' && !cName.includes(filterC)) return;
-                users++;
-                if(cName.includes("玉掛")) sales += prices["玉掛け"]; else if(cName.includes("クレーン")) sales += prices["クレーン"]; else if(cName.includes("31H")) sales += prices["31H"]; else if(cName.includes("11H")) sales += prices["11H"]; else sales += prices["その他"];
-                const h = d.getHours(); if(h < 8 || h >= 17) afterHours++;
-            });
+            // --- [1. システム上の本申込を自動集計] ---
+            const sysCounts = months.map((_, mIdx) => {
+                let t=0, c=0, f=0, sales=0, afterHours=0;
+                fyData.forEach(r => {
+                    const d = r.createdAt.toDate();
+                    const ridx = d.getMonth() + 1 >= 7 ? d.getMonth() + 1 - 7 : d.getMonth() + 1 + 5;
+                    if(ridx !== mIdx) return;
+                    
+                    const cName = r.courseName || "";
+                    // 24時間実績と売上の集計（仮予約も含む全ての有効な申込）
+                    if(d.getHours() < 8 || d.getHours() >= 17) afterHours++;
+                    if(cName.includes("玉掛")) sales += 27000; 
+                    else if(cName.includes("クレーン")) sales += 37000; 
+                    else if(cName.includes("31H")) sales += 32000; 
+                    else sales += 15000;
 
-            let planCap = 0, pastP = 0;
-            if(targetM === 'all') {
-                months.forEach((_, i) => {
-                    const s = statsData[`${fy}_${i}`] || {}, p = statsData[`${fy-1}_${i}`] || {};
-                    if(filterC === '玉掛け') { planCap += (s.t_cnt||0)*8; pastP += p.t_prs||0; }
-                    else if(filterC === 'クレーン') { planCap += (s.c_cnt||0)*6; pastP += p.c_prs||0; }
-                    else if(filterC === 'フォーク') { planCap += (s.f_cnt||0)*10; pastP += p.f_prs||0; }
-                    else { 
-                        planCap += (s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10; 
-                        pastP += (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0); 
+                    // 実績人数カウント（本申込のみ！）
+                    if(r.mode === 'full') {
+                        if(cName.includes("玉掛")) t++; 
+                        else if(cName.includes("クレーン")) c++; 
+                        else if(cName.includes("フォーク")) f++;
                     }
                 });
-            } else {
-                const s = statsData[`${fy}_${targetM}`] || {}, p = statsData[`${fy-1}_${targetM}`] || {};
-                if(filterC === '玉掛け') { planCap = (s.t_cnt||0)*8; pastP = p.t_prs||0; }
-                else if(filterC === 'クレーン') { planCap = (s.c_cnt||0)*6; pastP = p.c_prs||0; }
-                else if(filterC === 'フォーク') { planCap = (s.f_cnt||0)*10; pastP = p.f_prs||0; }
-                else { planCap = (s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10; pastP = (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0); }
-            }
+                return { t, c, f, sales, afterHours };
+            });
+
+            // --- [2. 合算処理：システム自動分 ＋ モーダル手入力分] ---
+            let users = 0, planCap = 0, pastP = 0, totalSales = 0, totalAfterHours = 0;
+            const calc = (mIdx) => {
+                const s = statsData[`${fy}_${mIdx}`] || {};
+                const p = statsData[`${fy-1}_${mIdx}`] || {};
+                const sc = sysCounts[mIdx];
+
+                const curT = sc.t + (s.t_prs || 0); // Web本申込 + 電話分
+                const curC = sc.c + (s.c_prs || 0);
+                const curF = sc.f + (s.f_prs || 0);
+                
+                // 売上も合算（システム分 ＋ 手入力人数 × 単価）
+                totalSales += sc.sales + ((s.t_prs||0)*27000) + ((s.c_prs||0)*37000) + ((s.f_prs||0)*32000);
+                totalAfterHours += sc.afterHours;
+
+                if(filterC === '玉掛け') { 
+                    users += curT; planCap += (s.t_cnt||0)*8; pastP += (p.t_prs||0); 
+                } else if(filterC === 'クレーン') { 
+                    users += curC; planCap += (s.c_cnt||0)*6; pastP += (p.c_prs||0); 
+                } else if(filterC === 'フォーク') { 
+                    users += curF; planCap += (s.f_cnt||0)*10; pastP += (p.f_prs||0); 
+                } else { 
+                    users += (curT + curC + curF); 
+                    planCap += ((s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10);
+                    pastP += ((p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0));
+                }
+            };
+            if(targetM === 'all') months.forEach((_, i) => calc(i)); else calc(targetM);
 
             document.getElementById('card-users').innerHTML = users + ' <span class="text-xs opacity-40">名</span>';
             document.getElementById('card-empty').innerHTML = Math.max(0, planCap - users) + ' <span class="text-xs opacity-40">席</span>';
             document.getElementById('card-target').innerHTML = (planCap > 0 ? ((users/planCap)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
-            document.getElementById('card-afterhours').innerHTML = afterHours + ' <span class="text-xs opacity-40">件</span>';
-            document.getElementById('card-sales').innerHTML = '¥' + sales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
+            document.getElementById('card-afterhours').innerHTML = totalAfterHours + ' <span class="text-xs opacity-40">件</span>';
+            document.getElementById('card-sales').innerHTML = '¥' + totalSales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
             document.getElementById('card-growth').innerHTML = (pastP > 0 ? ((users/pastP)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
             
-            renderCharts(fy, fyData);
+            renderCharts(fy, sysCounts); // グラフ描画へ
         }
 
-        function renderCharts(fy, fyData) {
-            const counts = { '玉掛け': new Array(12).fill(0), 'フォーク': new Array(12).fill(0), 'クレーン': new Array(12).fill(0) };
-            fyData.forEach(r => {
-                const d = r.createdAt.toDate();
-                const mIdx = d.getMonth() + 1 >= 7 ? d.getMonth() + 1 - 7 : d.getMonth() + 1 + 5;
-                if((r.courseName||"").includes("玉掛")) counts['玉掛け'][mIdx]++; else if((r.courseName||"").includes("フォーク")) counts['フォーク'][mIdx]++; else if((r.courseName||"").includes("クレーン")) counts['クレーン'][mIdx]++;
-            });
+        function renderCharts(fy, sysCounts) {
             const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            // 各月の「Web(sc) + 電話(statsData)」を計算
+            const getY = (mIdx, type) => {
+                const sc = sysCounts[mIdx];
+                const s = statsData[`${fy}_${mIdx}`] || {};
+                if(type === 't') return sc.t + (s.t_prs || 0);
+                if(type === 'c') return sc.c + (s.c_prs || 0);
+                if(type === 'f') return sc.f + (s.f_prs || 0);
+                return 0;
+            };
+
             if(mainChart) mainChart.destroy();
             mainChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: months,
                     datasets: [
-                        { label: '玉掛け', data: counts['玉掛け'], borderColor: '#00a2ff', tension: 0.4 },
-                        { label: 'フォーク', data: counts['フォーク'], borderColor: '#10b981', tension: 0.4 },
-                        { label: 'クレーン', data: counts['クレーン'], borderColor: '#f59e0b', tension: 0.4 },
-                        // ★前年度の破線を追加
-                        { label: '前年:玉掛', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.t_prs || 0)), borderColor: '#00a2ff', borderDash: [5, 5], tension: 0.3, fill: false, opacity: 0.5 },
-                        { label: '前年:ﾌｫｰｸ', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.f_prs || 0)), borderColor: '#10b981', borderDash: [5, 5], tension: 0.3, fill: false, opacity: 0.5 },
-                        { label: '前年:ｸﾚｰﾝ', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.c_prs || 0)), borderColor: '#f59e0b', borderDash: [5, 5], tension: 0.3, fill: false, opacity: 0.5 }
+                        { label: '玉掛け', data: months.map((_, i) => getY(i, 't')), borderColor: '#00a2ff', tension: 0.4, borderWidth: 3 },
+                        { label: 'フォーク', data: months.map((_, i) => getY(i, 'f')), borderColor: '#10b981', tension: 0.4, borderWidth: 3 },
+                        { label: 'クレーン', data: months.map((_, i) => getY(i, 'c')), borderColor: '#f472b6', tension: 0.4, borderWidth: 3 },
+                        // 前年度（破線）
+                        { label: '前年:玉掛', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.t_prs || 0)), borderColor: '#00a2ff44', borderDash: [5, 5], tension: 0.3, fill: false },
+                        { label: '前年:ﾌｫｰｸ', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.f_prs || 0)), borderColor: '#10b98144', borderDash: [5, 5], tension: 0.3, fill: false },
+                        { label: '前年:ｸﾚｰﾝ', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.c_prs || 0)), borderColor: '#f472b644', borderDash: [5, 5], tension: 0.3, fill: false }
                     ]
                 },
                 options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
+                    responsive: true, maintainAspectRatio: false, 
                     plugins: { legend: { labels: { color: '#fff' } } }, 
-                    scales: { 
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#fff' } }, 
-                        x: { grid: { display: false }, ticks: { color: '#fff' } } // ★軸の文字を白に
-                    } 
+                    scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#fff' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } 
                 }
             });
+            // ★ 円グラフ（ドーナツ）の進化版
             const shareCtx = document.getElementById('shareChart').getContext('2d');
             if(shareChart) shareChart.destroy();
+            
+            const targetM = document.getElementById('target-month-select').value;
+            let dData = [0, 0, 0]; // 玉掛, フォーク, クレーン
+            
+            if(targetM === 'all') {
+                months.forEach((_, i) => {
+                    const sc = sysCounts[i];
+                    const s = statsData[`${fy}_${i}`] || {};
+                    dData[0] += sc.t + (s.t_prs || 0);
+                    dData[1] += sc.f + (s.f_prs || 0);
+                    dData[2] += sc.c + (s.c_prs || 0);
+                });
+            } else {
+                const sc = sysCounts[targetM];
+                const s = statsData[`${fy}_${targetM}`] || {};
+                dData = [sc.t + (s.t_prs || 0), sc.f + (s.f_prs || 0), sc.c + (s.c_prs || 0)];
+            }
+            const total = dData.reduce((a, b) => a + b, 0);
+
             shareChart = new Chart(shareCtx, {
                 type: 'doughnut',
-                data: { labels: ['玉掛け', 'フォーク', 'クレーン'], datasets: [{ data: Object.values(counts).map(a => a.reduce((s,v)=>s+v,0)), backgroundColor: ['#00a2ff', '#10b981', '#f59e0b'], borderWidth: 0 }] },
-                options: { plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } }, cutout: '75%' }
+                data: {
+                    labels: ['玉掛け', 'フォーク', 'クレーン'],
+                    datasets: [{
+                        data: dData,
+                        backgroundColor: ['#00a2ff', '#10b981', '#f472b6'], // 水色, 緑, ピンク
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    cutout: '75%', 
+                    plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } }
+                },
+                plugins: [{
+                    id: 'centerText',
+                    afterDraw: (chart) => {
+                        const { ctx, chartArea: { left, top, width, height } } = chart;
+                        ctx.save();
+                        ctx.font = 'bold 1.2rem Montserrat'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+                        ctx.fillText(total + '名', left + width / 2, top + height / 2 + 5);
+                        ctx.font = '900 0.5rem Noto Sans JP'; ctx.fillStyle = '#64748b';
+                        ctx.fillText('TOTAL', left + width / 2, top + height / 2 - 15);
+                        ctx.restore();
+                    }
+                }]
             });
-        }
         document.getElementById('fiscal-year-select').addEventListener('change', updateDashboard);
         document.getElementById('target-month-select').addEventListener('change', updateDashboard);
         document.getElementById('course-filter').addEventListener('change', updateDashboard);
