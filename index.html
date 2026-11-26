@@ -113,14 +113,14 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse text-[10px]">
-                    <thead>
-                        <tr class="text-slate-500 border-b border-white/10 text-left italic">
-                            <th class="p-2">対象月</th>
-                            <th class="p-2 text-sky-400">玉掛(回)</th><th class="p-2 text-sky-400 opacity-50">玉掛(前年)</th>
-                            <th class="p-2 text-emerald-400">クレーン(回)</th><th class="p-2 text-emerald-400 opacity-50">クレーン(前年)</th>
-                            <th class="p-2 text-amber-400">フォーク(回)</th><th class="p-2 text-amber-400 opacity-50">フォーク(前年)</th>
-                        </tr>
-                    </thead>
+<thead>
+    <tr class="text-slate-500 border-b border-white/10 text-left italic">
+        <th class="p-2">対象月</th>
+        <th class="p-2 text-sky-400">玉掛 (回)</th><th class="p-2 text-sky-400">玉掛 (実績人数)</th>
+        <th class="p-2 text-emerald-400">クレーン (回)</th><th class="p-2 text-emerald-400">クレーン (実績)</th>
+        <th class="p-2 text-amber-400">フォーク (回)</th><th class="p-2 text-amber-400">フォーク (実績)</th>
+    </tr>
+</thead>
                     <tbody id="modal-table-body" class="past-input-grid"></tbody>
                 </table>
             </div>
@@ -185,23 +185,26 @@
                 const d = statsData[key] || { t_cnt:0, t_prs:0, c_cnt:0, c_prs:0, f_cnt:0, f_prs:0 };
                 return `<tr class="border-b border-white/5">
                     <td class="p-2 text-slate-300 font-bold">${m}</td>
-                    <td class="p-1"><input type="number" id="in-${key}-t_cnt" value="${d.t_cnt}"></td><td class="p-1 opacity-40"><input type="number" id="in-${key}-t_prs" value="${d.t_prs}"></td>
-                    <td class="p-1"><input type="number" id="in-${key}-c_cnt" value="${d.c_cnt}"></td><td class="p-1 opacity-40"><input type="number" id="in-${key}-c_prs" value="${d.c_prs}"></td>
-                    <td class="p-1"><input type="number" id="in-${key}-f_cnt" value="${d.f_cnt}"></td><td class="p-1 opacity-40"><input type="number" id="in-${key}-f_prs" value="${d.f_prs}"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-t_cnt" value="${d.t_cnt}"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-t_prs" value="${d.t_prs}" class="!text-sky-200 !bg-sky-500/10"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-c_cnt" value="${d.c_cnt}"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-c_prs" value="${d.c_prs}" class="!text-emerald-200 !bg-emerald-500/10"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-f_cnt" value="${d.f_cnt}"></td>
+                    <td class="p-1"><input type="number" id="in-${key}-f_prs" value="${d.f_prs}" class="!text-amber-200 !bg-amber-500/10"></td>
                 </tr>`;
             }).join('');
         };
-
-        window.openPastDataModal = () => { window.renderModalTable(); document.getElementById('past-modal').classList.add('active'); };
-        window.closePastDataModal = () => document.getElementById('past-modal').classList.remove('active');
 
         window.savePastData = async () => {
             months.forEach((_, i) => {
                 const key = `${currentModalYear}_${i}`;
                 statsData[key] = {
-                    t_cnt: Number(document.getElementById(`in-${key}-t_cnt`).value), t_prs: Number(document.getElementById(`in-${key}-t_prs`).value),
-                    c_cnt: Number(document.getElementById(`in-${key}-c_cnt`).value), c_prs: Number(document.getElementById(`in-${key}-c_prs`).value),
-                    f_cnt: Number(document.getElementById(`in-${key}-f_cnt`).value), f_prs: Number(document.getElementById(`in-${key}-f_prs`).value)
+                    t_cnt: Number(document.getElementById(`in-${key}-t_cnt`).value),
+                    t_prs: Number(document.getElementById(`in-${key}-t_prs`).value), // 実績人数
+                    c_cnt: Number(document.getElementById(`in-${key}-c_cnt`).value),
+                    c_prs: Number(document.getElementById(`in-${key}-c_prs`).value), // 実績人数
+                    f_cnt: Number(document.getElementById(`in-${key}-f_cnt`).value),
+                    f_prs: Number(document.getElementById(`in-${key}-f_prs`).value)  // 実績人数
                 };
             });
             try { await setDoc(doc(db, "settings", "management_stats_v2"), statsData); alert("保存しました"); window.closePastDataModal(); updateDashboard(); } catch (e) { alert(e.message); }
@@ -236,7 +239,10 @@
                     if(filterC === '玉掛け') { planCap += (s.t_cnt||0)*8; pastP += p.t_prs||0; }
                     else if(filterC === 'クレーン') { planCap += (s.c_cnt||0)*6; pastP += p.c_prs||0; }
                     else if(filterC === 'フォーク') { planCap += (s.f_cnt||0)*10; pastP += p.f_prs||0; }
-                    else { planCap += (s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10; pastP += (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0); }
+                    else { 
+                        planCap += (s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10; 
+                        pastP += (p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0); 
+                    }
                 });
             } else {
                 const s = statsData[`${fy}_${targetM}`] || {}, p = statsData[`${fy-1}_${targetM}`] || {};
@@ -252,6 +258,7 @@
             document.getElementById('card-afterhours').innerHTML = afterHours + ' <span class="text-xs opacity-40">件</span>';
             document.getElementById('card-sales').innerHTML = '¥' + sales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
             document.getElementById('card-growth').innerHTML = (pastP > 0 ? ((users/pastP)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
+            
             renderCharts(fy, fyData);
         }
 
@@ -272,7 +279,10 @@
                         { label: '玉掛け', data: counts['玉掛け'], borderColor: '#00a2ff', tension: 0.4 },
                         { label: 'フォーク', data: counts['フォーク'], borderColor: '#10b981', tension: 0.4 },
                         { label: 'クレーン', data: counts['クレーン'], borderColor: '#f59e0b', tension: 0.4 },
-                        { label: '前年合計実績', data: months.map((_, i) => { const p = statsData[`${fy-1}_${i}`] || {}; return (p.t_prs||0)+(p.c_prs||0)+(p.f_prs||0); }), borderColor: 'rgba(255,255,255,0.1)', borderDash: [5, 5], tension: 0 }
+                        { label: '前年合計実績', data: months.map((_, i) => { 
+                            const p = statsData[`${fy-1}_${i}`] || {}; 
+                            return (p.t_prs||0)+(p.c_prs||0)+(p.f_prs||0); 
+                        }), borderColor: 'rgba(255,255,255,0.1)', borderDash: [5, 5], tension: 0 }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#64748b' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }, x: { grid: { display: false }, ticks: { color: '#64748b' } } } }
@@ -285,7 +295,6 @@
                 options: { plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } }, cutout: '75%' }
             });
         }
-
         document.getElementById('fiscal-year-select').addEventListener('change', updateDashboard);
         document.getElementById('target-month-select').addEventListener('change', updateDashboard);
         document.getElementById('course-filter').addEventListener('change', updateDashboard);
