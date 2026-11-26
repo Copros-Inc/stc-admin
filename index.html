@@ -291,11 +291,27 @@
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#fff' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } }
             });
+            // ★ 円グラフ（ドーナツ）の進化版
             const shareCtx = document.getElementById('shareChart').getContext('2d');
             if(shareChart) shareChart.destroy();
-            let dData = [0, 0, 0];
-            if(targetM.value === 'all') { months.forEach((_, i) => { const sc = sysCounts[i]; const s = statsData[`${fy}_${i}`] || {}; dData[0] += sc.t_full + (s.t_prs || 0); dData[1] += sc.f_full + (s.f_prs || 0); dData[2] += sc.c_full + (s.c_prs || 0); }); }
-            else { const sc = sysCounts[targetM]; const s = statsData[`${fy}_${targetM}`] || {}; dData = [sc.t_full + (s.t_prs || 0), sc.f_full + (s.f_prs || 0), sc.c_full + (s.c_prs || 0)]; }
+            
+            let dData = [0, 0, 0]; // 玉掛, フォーク, クレーン
+            
+            if(targetM === 'all') {
+                months.forEach((_, i) => {
+                    const sc = sysCounts[i];
+                    const s = statsData[`${fy}_${i}`] || {};
+                    dData[0] += sc.t_full + (s.t_prs || 0);
+                    dData[1] += sc.f_full + (s.f_prs || 0);
+                    dData[2] += sc.c_full + (s.c_prs || 0);
+                });
+            } else {
+                // ここでエラー(targetM.value)が出ていたので修正
+                const mIdx = parseInt(targetM);
+                const sc = sysCounts[mIdx];
+                const s = statsData[`${fy}_${mIdx}`] || {};
+                dData = [sc.t_full + (s.t_prs || 0), sc.f_full + (s.f_prs || 0), sc.c_full + (s.c_prs || 0)];
+            }
             const total = dData.reduce((a, b) => a + b, 0);
             shareChart = new Chart(shareCtx, { type: 'doughnut', data: { labels: ['玉掛け', 'フォーク', 'クレーン'], datasets: [{ data: dData, backgroundColor: ['#00a2ff', '#10b981', '#f472b6'], borderWidth: 0 }] }, options: { cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } } }, plugins: [{ id: 'centerText', afterDraw: (chart) => { const { ctx, chartArea: { left, top, width, height } } = chart; ctx.save(); ctx.font = 'bold 1.2rem Montserrat'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(total + '名', left + width / 2, top + height / 2 + 5); ctx.font = '900 0.5rem Noto Sans JP'; ctx.fillStyle = '#64748b'; ctx.fillText('TOTAL', left + width / 2, top + height / 2 - 15); ctx.restore(); } }] });
         }
