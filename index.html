@@ -11,8 +11,8 @@
     <script src="js/common.js"></script>
     <style>
         .stat-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 25px; transition: 0.3s; height: 100%; }
-        .stat-number { font-family: 'Montserrat'; font-size: 2rem; font-weight: 900; color: #fff; font-style: italic; }
-        .stat-label { font-size: 0.65rem; font-weight: 900; color: #64748b; text-transform: uppercase; tracking: 0.1em; margin-bottom: 10px; display: block; }
+        .stat-number { font-family: 'Montserrat'; font-size: 1.8rem; font-weight: 900; color: #fff; font-style: italic; }
+        .stat-label { font-size: 0.6rem; font-weight: 900; color: #64748b; text-transform: uppercase; tracking: 0.1em; margin-bottom: 8px; display: block; }
         .chart-container { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 30px; padding: 30px; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
@@ -39,7 +39,6 @@
             </div>
         </div>
 
-        <!-- 重要指標サマリー -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-10">
             <div class="stat-card border-l-4 border-sky-500">
                 <span class="stat-label">受講者数</span>
@@ -63,10 +62,9 @@
             </div>
         </div>
 
-        <!-- フィルター -->
         <div class="bg-white/5 border border-white/5 p-6 rounded-[2rem] mb-10 flex flex-wrap items-center justify-center gap-8">
             <div class="flex items-center gap-4">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Target Month</span>
+                <span class="text-[10px] font-black text-slate-500 uppercase italic tracking-widest">Target Month</span>
                 <select id="target-month-select" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-2 font-black text-sky-400 outline-none focus:border-sky-500 transition-all">
                     <option value="all">年度通期累計 (4月-3月)</option>
                     <option value="0">4月</option><option value="1">5月</option><option value="2">6月</option><option value="3">7月</option>
@@ -97,7 +95,6 @@
         </div>
     </div>
 
-    <!-- マスターデータ編集モーダル -->
     <div id="past-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
@@ -108,6 +105,7 @@
                 <button onclick="window.switchModalYear(2025)" id="tab-2025" class="px-6 py-2 rounded-t-xl font-black italic text-xs bg-sky-600 text-white">2025年度</button>
                 <button onclick="window.switchModalYear(2026)" id="tab-2026" class="px-6 py-2 rounded-t-xl font-black italic text-xs bg-white/5 text-slate-400">2026年度</button>
                 <button onclick="window.switchModalYear(2027)" id="tab-2027" class="px-6 py-2 rounded-t-xl font-black italic text-xs bg-white/5 text-slate-400">2027年度</button>
+                <button onclick="window.switchModalYear(2028)" id="tab-2028" class="px-6 py-2 rounded-t-xl font-black italic text-xs bg-white/5 text-slate-400">2028年度</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse text-[10px]">
@@ -122,7 +120,7 @@
                     <tbody id="modal-table-body" class="past-input-grid"></tbody>
                 </table>
             </div>
-            <button onclick="window.savePastData()" class="w-full mt-10 bg-sky-600 hover:bg-sky-500 text-white py-5 rounded-2xl font-black italic transition shadow-2xl">全てのデータを保存して更新</button>
+            <button onclick="window.savePastData()" class="w-full mt-10 bg-sky-600 hover:bg-sky-500 text-white py-5 rounded-2xl font-black italic transition">全てのデータを保存して更新</button>
         </div>
     </div>
 
@@ -142,7 +140,6 @@
         let currentModalYear = 2025;
         const months = ["4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月"];
         const prices = { "玉掛け": 27000, "クレーン": 37000, "31H": 32000, "11H": 22000, "その他": 15000 };
-        const capacityMap = { "玉掛け": 8, "クレーン": 6, "フォーク": 10 };
 
         signInAnonymously(auth).then(async () => {
             const res = await getDoc(doc(db, "settings", "management_stats_v2"));
@@ -160,7 +157,7 @@
             currentModalYear = year;
             [2025, 2026, 2027, 2028].forEach(y => {
                 const btn = document.getElementById(`tab-${y}`);
-                btn.className = y === year ? 'px-6 py-2 rounded-t-xl font-black italic text-xs bg-sky-600 text-white' : 'px-6 py-2 rounded-t-xl font-black italic text-xs bg-white/5 text-slate-400';
+                if(btn) btn.className = y === year ? 'px-6 py-2 rounded-t-xl font-black italic text-xs bg-sky-600 text-white' : 'px-6 py-2 rounded-t-xl font-black italic text-xs bg-white/5 text-slate-400';
             });
             window.renderModalTable();
         };
@@ -179,10 +176,7 @@
             }).join('');
         };
 
-        window.openPastDataModal = () => {
-            window.renderModalTable();
-            document.getElementById('past-modal').classList.add('active');
-        };
+        window.openPastDataModal = () => { window.renderModalTable(); document.getElementById('past-modal').classList.add('active'); };
         window.closePastDataModal = () => document.getElementById('past-modal').classList.remove('active');
 
         window.savePastData = async () => {
@@ -211,23 +205,14 @@
             fyData.forEach(r => {
                 const d = r.createdAt.toDate();
                 const mIdx = d.getMonth() + 1 >= 4 ? d.getMonth() + 1 - 4 : d.getMonth() + 1 + 8;
-                
-                // ★修正：'all'の場合は全月、数字の場合はその月だけをカウント
                 if(targetM !== 'all' && mIdx.toString() !== targetM) return;
-                
                 const cName = r.courseName || "";
                 if(filterC !== 'all' && !cName.includes(filterC)) return;
-                
                 users++;
-                if(cName.includes("玉掛")) sales += prices["玉掛け"]; 
-                else if(cName.includes("クレーン")) sales += prices["クレーン"]; 
-                else if(cName.includes("31H")) sales += prices["31H"]; 
-                else if(cName.includes("11H")) sales += prices["11H"]; 
-                else sales += prices["その他"];
+                if(cName.includes("玉掛")) sales += prices["玉掛け"]; else if(cName.includes("クレーン")) sales += prices["クレーン"]; else if(cName.includes("31H")) sales += prices["31H"]; else if(cName.includes("11H")) sales += prices["11H"]; else sales += prices["その他"];
                 const h = d.getHours(); if(h < 8 || h >= 17) afterHours++;
             });
 
-            // ★達成率と成長率の計算（'all'の時は12ヶ月分を合算）
             let planCap = 0, pastP = 0;
             if(targetM === 'all') {
                 months.forEach((_, i) => {
@@ -251,8 +236,8 @@
             document.getElementById('card-afterhours').innerHTML = afterHours + ' <span class="text-xs opacity-40">件</span>';
             document.getElementById('card-sales').innerHTML = '¥' + sales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
             document.getElementById('card-growth').innerHTML = (pastP > 0 ? ((users/pastP)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
-            
             renderCharts(fy, fyData);
+        }
 
         function renderCharts(fy, fyData) {
             const counts = { '玉掛け': new Array(12).fill(0), 'フォーク': new Array(12).fill(0), 'クレーン': new Array(12).fill(0) };
@@ -284,6 +269,7 @@
                 options: { plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } }, cutout: '75%' }
             });
         }
+
         document.getElementById('fiscal-year-select').addEventListener('change', updateDashboard);
         document.getElementById('target-month-select').addEventListener('change', updateDashboard);
         document.getElementById('course-filter').addEventListener('change', updateDashboard);
