@@ -153,13 +153,16 @@
         signInAnonymously(auth).then(async () => {
             const res = await getDoc(doc(db, "settings", "management_stats_v2"));
             if(res.exists()) statsData = res.data();
+            // --- [修正] 現在の年度と月（7月開始）を正確に計算 ---
             const now = new Date();
             const year = now.getFullYear();
-            const month = now.getMonth() + 1;
-            // 会計年度判定（7月以降はその年、6月までは前年）
+            const month = now.getMonth() + 1; // 1-12
+
+            // 会計年度：7月以降はその年、6月以前は「西暦-1」が年度
             const currentFY = month >= 7 ? year : year - 1;
             document.getElementById('fiscal-year-select').value = currentFY.toString();
-            // 月のインデックス判定（7月=0, 8月=1 ... 6月=11）
+
+            // 月インデックス：7月=0, 11月=4, 6月=11
             const monthIdx = month >= 7 ? month - 7 : month + 5;
             document.getElementById('target-month-select').value = monthIdx.toString();
 
@@ -200,11 +203,11 @@
                 const key = `${currentModalYear}_${i}`;
                 statsData[key] = {
                     t_cnt: Number(document.getElementById(`in-${key}-t_cnt`).value),
-                    t_prs: Number(document.getElementById(`in-${key}-t_prs`).value), // 実績人数
+                    t_prs: Number(document.getElementById(`in-${key}-t_prs`).value),
                     c_cnt: Number(document.getElementById(`in-${key}-c_cnt`).value),
-                    c_prs: Number(document.getElementById(`in-${key}-c_prs`).value), // 実績人数
+                    c_prs: Number(document.getElementById(`in-${key}-c_prs`).value),
                     f_cnt: Number(document.getElementById(`in-${key}-f_cnt`).value),
-                    f_prs: Number(document.getElementById(`in-${key}-f_prs`).value)  // 実績人数
+                    f_prs: Number(document.getElementById(`in-${key}-f_prs`).value)
                 };
             });
             try { await setDoc(doc(db, "settings", "management_stats_v2"), statsData); alert("保存しました"); window.closePastDataModal(); updateDashboard(); } catch (e) { alert(e.message); }
@@ -234,7 +237,7 @@
                     if(r.mode === 'full') {
                         if(cName.includes("玉掛")) { t_full++; sales += 27000; }
                         else if(cName.includes("クレーン")) { c_full++; sales += 37000; }
-                        else if(cName.includes("31H")) { f_full++; sales += 32000; }
+                        else if(cName.includes("フォーク")) { f_full++; sales += 32000; }
                     }
                 });
                 return { t_all, c_all, f_all, t_full, c_full, f_full, sales, afterHours };
@@ -255,7 +258,7 @@
                 else if(filterC === 'フォーク') { users += curF_f; occupied += curF_a; planCap += (s.f_cnt||0)*10; pastP += (p.f_prs||0); }
                 else { users += (curT_f + curC_f + curF_f); occupied += (curT_a + curC_a + curF_a); planCap += ((s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10); pastP += ((p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0)); }
             };
-            if(targetM === 'all') months.forEach((_, i) => calc(i)); else calc(targetM);
+            if(targetM === 'all') months.forEach((_, i) => calc(i)); else calc(parseInt(targetM));
 
             document.getElementById('card-users').innerHTML = users + ' <span class="text-xs opacity-40">名</span>';
             document.getElementById('card-empty').innerHTML = Math.max(0, planCap - occupied) + ' <span class="text-xs opacity-40">席</span>';
@@ -263,11 +266,13 @@
             document.getElementById('card-afterhours').innerHTML = totalAfterHours + ' <span class="text-xs opacity-40">件</span>';
             document.getElementById('card-sales').innerHTML = '¥' + totalSales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
             document.getElementById('card-growth').innerHTML = (pastP > 0 ? ((users/pastP)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
+            
             renderCharts(fy, sysCounts);
         }
 
         function renderCharts(fy, sysCounts) {
             const ctx = document.getElementById('mainChart').getContext('2d');
+            const targetM = document.getElementById('target-month-select').value;
             const getY = (mIdx, type) => {
                 const sc = sysCounts[mIdx]; const s = statsData[`${fy}_${mIdx}`] || {};
                 if(type === 't') return sc.t_full + (s.t_prs || 0);
@@ -291,27 +296,11 @@
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#fff' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } }
             });
-            // ★ 円グラフ（ドーナツ）の進化版
             const shareCtx = document.getElementById('shareChart').getContext('2d');
             if(shareChart) shareChart.destroy();
-            
-            let dData = [0, 0, 0]; // 玉掛, フォーク, クレーン
-            
-            if(targetM === 'all') {
-                months.forEach((_, i) => {
-                    const sc = sysCounts[i];
-                    const s = statsData[`${fy}_${i}`] || {};
-                    dData[0] += sc.t_full + (s.t_prs || 0);
-                    dData[1] += sc.f_full + (s.f_prs || 0);
-                    dData[2] += sc.c_full + (s.c_prs || 0);
-                });
-            } else {
-                // ここでエラー(targetM.value)が出ていたので修正
-                const mIdx = parseInt(targetM);
-                const sc = sysCounts[mIdx];
-                const s = statsData[`${fy}_${mIdx}`] || {};
-                dData = [sc.t_full + (s.t_prs || 0), sc.f_full + (s.f_prs || 0), sc.c_full + (s.c_prs || 0)];
-            }
+            let dData = [0, 0, 0];
+            if(targetM === 'all') { months.forEach((_, i) => { const sc = sysCounts[i]; const s = statsData[`${fy}_${i}`] || {}; dData[0] += sc.t_full + (s.t_prs || 0); dData[1] += sc.f_full + (s.f_prs || 0); dData[2] += sc.c_full + (s.c_prs || 0); }); }
+            else { const mIdx = parseInt(targetM); const sc = sysCounts[mIdx]; const s = statsData[`${fy}_${mIdx}`] || {}; dData = [sc.t_full + (s.t_prs || 0), sc.f_full + (s.f_prs || 0), sc.c_full + (s.c_prs || 0)]; }
             const total = dData.reduce((a, b) => a + b, 0);
             shareChart = new Chart(shareCtx, { type: 'doughnut', data: { labels: ['玉掛け', 'フォーク', 'クレーン'], datasets: [{ data: dData, backgroundColor: ['#00a2ff', '#10b981', '#f472b6'], borderWidth: 0 }] }, options: { cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } } }, plugins: [{ id: 'centerText', afterDraw: (chart) => { const { ctx, chartArea: { left, top, width, height } } = chart; ctx.save(); ctx.font = 'bold 1.2rem Montserrat'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(total + '名', left + width / 2, top + height / 2 + 5); ctx.font = '900 0.5rem Noto Sans JP'; ctx.fillStyle = '#64748b'; ctx.fillText('TOTAL', left + width / 2, top + height / 2 - 15); ctx.restore(); } }] });
         }
