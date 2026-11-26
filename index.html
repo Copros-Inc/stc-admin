@@ -227,54 +227,69 @@
                 return resFY === fy;
             });
 
+            // 1. システム上の集計（科目別に細かく分ける）
             const sysCounts = months.map((_, mIdx) => {
-                let t_all=0, c_all=0, f_all=0, t_full=0, c_full=0, f_full=0, sales=0, afterHours=0;
+                let t_all=0, c_all=0, f_all=0, t_full=0, c_full=0, f_full=0;
+                let t_sales=0, c_sales=0, f_sales=0, t_ah=0, c_ah=0, f_ah=0;
+
                 fyData.forEach(r => {
                     const d = r.createdAt.toDate();
                     const ridx = d.getMonth() + 1 >= 7 ? d.getMonth() + 1 - 7 : d.getMonth() + 1 + 5;
                     if(ridx !== mIdx) return;
-                    if(d.getHours() < 8 || d.getHours() >= 17) afterHours++;
+                    
                     const cName = r.courseName || "";
-                    if(cName.includes("玉掛")) t_all++; else if(cName.includes("クレーン")) c_all++; else if(cName.includes("フォーク")) f_all++;
-                    if(r.mode === 'full') {
-                        if(cName.includes("玉掛")) { t_full++; sales += 27000; }
-                        else if(cName.includes("クレーン")) { c_full++; sales += 37000; }
-                        else if(cName.includes("フォーク")) { f_full++; sales += 32000; }
+                    const isAH = d.getHours() < 8 || d.getHours() >= 17;
+
+                    if(cName.includes("玉掛")) { 
+                        t_all++; if(isAH) t_ah++; 
+                        if(r.mode === 'full') { t_full++; t_sales += 27000; }
+                    } else if(cName.includes("クレーン")) { 
+                        c_all++; if(isAH) c_ah++; 
+                        if(r.mode === 'full') { c_full++; c_sales += 37000; }
+                    } else if(cName.includes("31H")) { 
+                        f_all++; if(isAH) f_ah++; 
+                        if(r.mode === 'full') { f_full++; f_sales += 32000; }
                     }
                 });
-                return { t_all, c_all, f_all, t_full, c_full, f_full, sales, afterHours };
+                return { t_all, c_all, f_all, t_full, c_full, f_full, t_sales, c_sales, f_sales, t_ah, c_ah, f_ah };
             });
 
-            // 2. 合算計算（システム自動分 ＋ モーダル手入力分）
+            // 2. 合算計算（フィルターを全カードに適用）
             let users = 0, planCap = 0, pastP = 0, totalSales = 0, totalAfterHours = 0;
             const calc = (mIdx) => {
                 const s = statsData[`${fy}_${mIdx}`] || {};
                 const p = statsData[`${fy-1}_${mIdx}`] || {};
                 const sc = sysCounts[mIdx];
 
-                // 実績 ＝ Web本申込 ＋ モーダル実績人数（手動分）
-                const curT_f = sc.t_full + (s.t_prs || 0);
-                const curC_f = sc.c_full + (s.c_prs || 0);
-                const curF_f = sc.f_full + (s.f_prs || 0);
-                
-                totalSales += sc.sales + ((s.t_prs||0)*27000) + ((s.c_prs||0)*37000) + ((s.f_prs||0)*32000);
-                totalAfterHours += sc.afterHours;
-
                 if(filterC === '玉掛け') { 
-                    users += curT_f; planCap += (s.t_cnt||0)*8; pastP += (p.t_prs||0); 
+                    users += sc.t_full + (s.t_prs || 0);
+                    planCap += (s.t_cnt||0)*8;
+                    pastP += (p.t_prs||0);
+                    totalSales += sc.t_sales + ((s.t_prs||0)*27000);
+                    totalAfterHours += sc.t_ah;
                 } else if(filterC === 'クレーン') { 
-                    users += curC_f; planCap += (s.c_cnt||0)*6; pastP += (p.c_prs||0); 
+                    users += sc.c_full + (s.c_prs || 0);
+                    planCap += (s.c_cnt||0)*6;
+                    pastP += (p.c_prs||0);
+                    totalSales += sc.c_sales + ((s.c_prs||0)*37000);
+                    totalAfterHours += sc.c_ah;
                 } else if(filterC === 'フォーク') { 
-                    users += curF_f; planCap += (s.f_cnt||0)*10; pastP += (p.f_prs||0); 
+                    users += sc.f_full + (s.f_prs || 0);
+                    planCap += (s.f_cnt||0)*10;
+                    pastP += (p.f_prs||0);
+                    totalSales += sc.f_sales + ((s.f_prs||0)*32000);
+                    totalAfterHours += sc.f_ah;
                 } else { 
-                    users += (curT_f + curC_f + curF_f); 
-                    planCap += ((s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10);
-                    pastP += ((p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0));
+                    users += (sc.t_full + sc.c_full + sc.f_full) + (s.t_prs + s.c_prs + s.f_prs || 0);
+                    planCap += (s.t_cnt*8 + s.c_cnt*6 + s.f_cnt*10);
+                    pastP += (p.t_prs + p.c_prs + p.f_prs || 0);
+                    totalSales += (sc.t_sales + sc.c_sales + sc.f_sales) + ((s.t_prs||0)*27000 + (s.c_prs||0)*37000 + (s.f_prs||0)*32000);
+                    totalAfterHours += (sc.t_ah + sc.c_ah + sc.f_ah);
                 }
             };
             if(targetM === 'all') months.forEach((_, i) => calc(i)); else calc(parseInt(targetM));
 
-            // カード表示：空席数 ＝ 計画キャパ ー 実績人数
+            // 3. 全ての数値をカードに反映
             document.getElementById('card-users').innerHTML = users + ' <span class="text-xs opacity-40">名</span>';
             document.getElementById('card-empty').innerHTML = Math.max(0, planCap - users) + ' <span class="text-xs opacity-40">席</span>';
             document.getElementById('card-target').innerHTML = (planCap > 0 ? ((users/planCap)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
