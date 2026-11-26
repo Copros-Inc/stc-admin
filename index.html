@@ -148,9 +148,21 @@
         signInAnonymously(auth).then(async () => {
             const res = await getDoc(doc(db, "settings", "management_stats_v2"));
             if(res.exists()) statsData = res.data();
+            
+            // --- [修正] 現在の年度と月を自動計算してセット ---
             const now = new Date();
-            const curM = now.getMonth() + 1;
-            document.getElementById('target-month-select').value = curM >= 4 ? curM - 4 : curM + 8;
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1; // 1-12
+
+            // 年度判定（4月以降はその年、3月までは前年を年度とする）
+            const currentFY = month >= 4 ? year : year - 1;
+            document.getElementById('fiscal-year-select').value = currentFY.toString();
+
+            // 月のインデックス判定（4月=0, 5月=1 ... 3月=11）
+            const monthIdx = month >= 4 ? month - 4 : month + 8;
+            document.getElementById('target-month-select').value = monthIdx.toString();
+            // ----------------------------------------------
+
             onSnapshot(collection(db, "reservations"), (snap) => {
                 reservations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 updateDashboard();
