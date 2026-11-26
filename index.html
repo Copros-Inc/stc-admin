@@ -143,20 +143,20 @@
         let statsData = {}; 
         let currentModalYear = 2025;
         const months = ["7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月", "4月", "5月", "6月"];
+        const prices = { "玉掛け": 27000, "クレーン": 37000, "31H": 32000, "11H": 22000, "その他": 15000 };
 
-        // signInAnonymously(auth).then... の中
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
-
-        // 会計年度判定（7月以降はその年、6月までは前年）
-        const currentFY = month >= 7 ? year : year - 1;
-        document.getElementById('fiscal-year-select').value = currentFY.toString();
-
-        // 月のインデックス判定（7月=0, 8月=1 ... 6月=11）
-        const monthIdx = month >= 7 ? month - 7 : month + 5;
-        document.getElementById('target-month-select').value = monthIdx.toString();
-            // ----------------------------------------------
+        signInAnonymously(auth).then(async () => {
+            const res = await getDoc(doc(db, "settings", "management_stats_v2"));
+            if(res.exists()) statsData = res.data();
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            // 会計年度判定（7月以降はその年、6月までは前年）
+            const currentFY = month >= 7 ? year : year - 1;
+            document.getElementById('fiscal-year-select').value = currentFY.toString();
+            // 月のインデックス判定（7月=0, 8月=1 ... 6月=11）
+            const monthIdx = month >= 7 ? month - 7 : month + 5;
+            document.getElementById('target-month-select').value = monthIdx.toString();
 
             onSnapshot(collection(db, "reservations"), (snap) => {
                 reservations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
