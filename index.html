@@ -298,6 +298,16 @@
         document.getElementById('fiscal-year-select').addEventListener('change', updateDashboard);
         document.getElementById('target-month-select').addEventListener('change', updateDashboard);
         document.getElementById('course-filter').addEventListener('change', updateDashboard);
+
+                // --- モーダルの開閉を制御する命令を追加 ---
+        window.openPastDataModal = () => {
+            window.renderModalTable();
+            document.getElementById('past-modal').classList.add('active');
+        };
+
+        window.closePastDataModal = () => {
+            document.getElementById('past-modal').classList.remove('active');
+        };
     </script>
 </body>
 </html>
