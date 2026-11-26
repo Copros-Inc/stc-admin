@@ -222,65 +222,38 @@
                 return resFY === fy;
             });
 
-            // --- [1. システム上の本申込を自動集計] ---
             const sysCounts = months.map((_, mIdx) => {
-                let t=0, c=0, f=0, sales=0, afterHours=0, t_full=0, c_full=0, f_full=0;
+                let t_all=0, c_all=0, f_all=0, t_full=0, c_full=0, f_full=0, sales=0, afterHours=0;
                 fyData.forEach(r => {
                     const d = r.createdAt.toDate();
                     const ridx = d.getMonth() + 1 >= 7 ? d.getMonth() + 1 - 7 : d.getMonth() + 1 + 5;
                     if(ridx !== mIdx) return;
-                    
-                    const cName = r.courseName || "";
-                    // 24時間実績の集計
                     if(d.getHours() < 8 || d.getHours() >= 17) afterHours++;
-
-                    // 【空席計算用】：全ての有効な申込（本申込 ＋ 仮予約）をカウント
-                    if(cName.includes("玉掛")) t++; 
-                    else if(cName.includes("クレーン")) c++; 
-                    else if(cName.includes("フォーク")) f++;
-
-                    // 【実績・売上計算用】：本申込(full)のみをカウント
+                    const cName = r.courseName || "";
+                    if(cName.includes("玉掛")) t_all++; else if(cName.includes("クレーン")) c_all++; else if(cName.includes("フォーク")) f_all++;
                     if(r.mode === 'full') {
                         if(cName.includes("玉掛")) { t_full++; sales += 27000; }
                         else if(cName.includes("クレーン")) { c_full++; sales += 37000; }
-                        else if(cName.includes("フォーク")) { f_full++; sales += 32000; }
+                        else if(cName.includes("31H")) { f_full++; sales += 32000; }
                     }
                 });
-                return { t, c, f, t_full, c_full, f_full, sales, afterHours };
+                return { t_all, c_all, f_all, t_full, c_full, f_full, sales, afterHours };
             });
 
-            // --- [2. 合算処理] ---
-            let users = 0, planCap = 0, pastP = 0, totalSales = 0, totalAfterHours = 0, occupied = 0;
+            let users = 0, occupied = 0, planCap = 0, pastP = 0, totalSales = 0, totalAfterHours = 0;
             const calc = (mIdx) => {
                 const s = statsData[`${fy}_${mIdx}`] || {};
                 const p = statsData[`${fy-1}_${mIdx}`] || {};
                 const sc = sysCounts[mIdx];
-
-                // 実績（本申込分）
-                const curT_full = sc.t_full + (s.t_prs || 0);
-                const curC_full = sc.c_full + (s.c_prs || 0);
-                const curF_full = sc.f_full + (s.f_prs || 0);
-                
-                // 埋まっている席（本申込 ＋ 仮予約 ＋ 電話分）
-                const curT_all = sc.t + (s.t_prs || 0);
-                const curC_all = sc.c + (s.c_prs || 0);
-                const curF_all = sc.f + (s.f_prs || 0);
-
+                const curT_f = sc.t_full + (s.t_prs || 0); const curT_a = sc.t_all + (s.t_prs || 0);
+                const curC_f = sc.c_full + (s.c_prs || 0); const curC_a = sc.c_all + (s.c_prs || 0);
+                const curF_f = sc.f_full + (s.f_prs || 0); const curF_a = sc.f_all + (s.f_prs || 0);
                 totalSales += sc.sales + ((s.t_prs||0)*27000) + ((s.c_prs||0)*37000) + ((s.f_prs||0)*32000);
                 totalAfterHours += sc.afterHours;
-
-                if(filterC === '玉掛け') { 
-                    users += curT_full; occupied += curT_all; planCap += (s.t_cnt||0)*8; pastP += (p.t_prs||0); 
-                } else if(filterC === 'クレーン') { 
-                    users += curC_full; occupied += curC_all; planCap += (s.c_cnt||0)*6; pastP += (p.c_prs||0); 
-                } else if(filterC === 'フォーク') { 
-                    users += curF_full; occupied += curF_all; planCap += (s.f_cnt||0)*10; pastP += (p.f_prs||0); 
-                } else { 
-                    users += (curT_full + curC_full + curF_full); 
-                    occupied += (curT_all + curC_all + curF_all);
-                    planCap += ((s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10);
-                    pastP += ((p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0));
-                }
+                if(filterC === '玉掛け') { users += curT_f; occupied += curT_a; planCap += (s.t_cnt||0)*8; pastP += (p.t_prs||0); }
+                else if(filterC === 'クレーン') { users += curC_f; occupied += curC_a; planCap += (s.c_cnt||0)*6; pastP += (p.c_prs||0); }
+                else if(filterC === 'フォーク') { users += curF_f; occupied += curF_a; planCap += (s.f_cnt||0)*10; pastP += (p.f_prs||0); }
+                else { users += (curT_f + curC_f + curF_f); occupied += (curT_a + curC_a + curF_a); planCap += ((s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10); pastP += ((p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0)); }
             };
             if(targetM === 'all') months.forEach((_, i) => calc(i)); else calc(targetM);
 
@@ -290,23 +263,18 @@
             document.getElementById('card-afterhours').innerHTML = totalAfterHours + ' <span class="text-xs opacity-40">件</span>';
             document.getElementById('card-sales').innerHTML = '¥' + totalSales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
             document.getElementById('card-growth').innerHTML = (pastP > 0 ? ((users/pastP)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
-            
-            renderCharts(fy, sysCounts); // グラフ描画へ
+            renderCharts(fy, sysCounts);
         }
 
         function renderCharts(fy, sysCounts) {
             const ctx = document.getElementById('mainChart').getContext('2d');
-            
-            // 各月の「Web(sc) + 電話(statsData)」を計算
             const getY = (mIdx, type) => {
-                const sc = sysCounts[mIdx];
-                const s = statsData[`${fy}_${mIdx}`] || {};
-                if(type === 't') return sc.t + (s.t_prs || 0);
-                if(type === 'c') return sc.c + (s.c_prs || 0);
-                if(type === 'f') return sc.f + (s.f_prs || 0);
+                const sc = sysCounts[mIdx]; const s = statsData[`${fy}_${mIdx}`] || {};
+                if(type === 't') return sc.t_full + (s.t_prs || 0);
+                if(type === 'c') return sc.c_full + (s.c_prs || 0);
+                if(type === 'f') return sc.f_full + (s.f_prs || 0);
                 return 0;
             };
-
             if(mainChart) mainChart.destroy();
             mainChart = new Chart(ctx, {
                 type: 'line',
@@ -316,80 +284,26 @@
                         { label: '玉掛け', data: months.map((_, i) => getY(i, 't')), borderColor: '#00a2ff', tension: 0.4, borderWidth: 3 },
                         { label: 'フォーク', data: months.map((_, i) => getY(i, 'f')), borderColor: '#10b981', tension: 0.4, borderWidth: 3 },
                         { label: 'クレーン', data: months.map((_, i) => getY(i, 'c')), borderColor: '#f472b6', tension: 0.4, borderWidth: 3 },
-                        // 前年度（破線）
                         { label: '前年:玉掛', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.t_prs || 0)), borderColor: '#00a2ff44', borderDash: [5, 5], tension: 0.3, fill: false },
                         { label: '前年:ﾌｫｰｸ', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.f_prs || 0)), borderColor: '#10b98144', borderDash: [5, 5], tension: 0.3, fill: false },
                         { label: '前年:ｸﾚｰﾝ', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.c_prs || 0)), borderColor: '#f472b644', borderDash: [5, 5], tension: 0.3, fill: false }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { labels: { color: '#fff' } } }, 
-                    scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#fff' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } 
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#fff' } }, x: { grid: { display: false }, ticks: { color: '#fff' } } } }
             });
-            // ★ 円グラフ（ドーナツ）の進化版
             const shareCtx = document.getElementById('shareChart').getContext('2d');
             if(shareChart) shareChart.destroy();
-            
-            const targetM = document.getElementById('target-month-select').value;
-            let dData = [0, 0, 0]; // 玉掛, フォーク, クレーン
-            
-            if(targetM === 'all') {
-                months.forEach((_, i) => {
-                    const sc = sysCounts[i];
-                    const s = statsData[`${fy}_${i}`] || {};
-                    dData[0] += sc.t + (s.t_prs || 0);
-                    dData[1] += sc.f + (s.f_prs || 0);
-                    dData[2] += sc.c + (s.c_prs || 0);
-                });
-            } else {
-                const sc = sysCounts[targetM];
-                const s = statsData[`${fy}_${targetM}`] || {};
-                dData = [sc.t + (s.t_prs || 0), sc.f + (s.f_prs || 0), sc.c + (s.c_prs || 0)];
-            }
+            let dData = [0, 0, 0];
+            if(targetM.value === 'all') { months.forEach((_, i) => { const sc = sysCounts[i]; const s = statsData[`${fy}_${i}`] || {}; dData[0] += sc.t_full + (s.t_prs || 0); dData[1] += sc.f_full + (s.f_prs || 0); dData[2] += sc.c_full + (s.c_prs || 0); }); }
+            else { const sc = sysCounts[targetM]; const s = statsData[`${fy}_${targetM}`] || {}; dData = [sc.t_full + (s.t_prs || 0), sc.f_full + (s.f_prs || 0), sc.c_full + (s.c_prs || 0)]; }
             const total = dData.reduce((a, b) => a + b, 0);
-
-            shareChart = new Chart(shareCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['玉掛け', 'フォーク', 'クレーン'],
-                    datasets: [{
-                        data: dData,
-                        backgroundColor: ['#00a2ff', '#10b981', '#f472b6'], // 水色, 緑, ピンク
-                        borderWidth: 0
-                    }]
-                },
-                options: { 
-                    cutout: '75%', 
-                    plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } }
-                },
-                plugins: [{
-                    id: 'centerText',
-                    afterDraw: (chart) => {
-                        const { ctx, chartArea: { left, top, width, height } } = chart;
-                        ctx.save();
-                        ctx.font = 'bold 1.2rem Montserrat'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-                        ctx.fillText(total + '名', left + width / 2, top + height / 2 + 5);
-                        ctx.font = '900 0.5rem Noto Sans JP'; ctx.fillStyle = '#64748b';
-                        ctx.fillText('TOTAL', left + width / 2, top + height / 2 - 15);
-                        ctx.restore();
-                    }
-                }]
-            });
+            shareChart = new Chart(shareCtx, { type: 'doughnut', data: { labels: ['玉掛け', 'フォーク', 'クレーン'], datasets: [{ data: dData, backgroundColor: ['#00a2ff', '#10b981', '#f472b6'], borderWidth: 0 }] }, options: { cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } } }, plugins: [{ id: 'centerText', afterDraw: (chart) => { const { ctx, chartArea: { left, top, width, height } } = chart; ctx.save(); ctx.font = 'bold 1.2rem Montserrat'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(total + '名', left + width / 2, top + height / 2 + 5); ctx.font = '900 0.5rem Noto Sans JP'; ctx.fillStyle = '#64748b'; ctx.fillText('TOTAL', left + width / 2, top + height / 2 - 15); ctx.restore(); } }] });
+        }
         document.getElementById('fiscal-year-select').addEventListener('change', updateDashboard);
         document.getElementById('target-month-select').addEventListener('change', updateDashboard);
         document.getElementById('course-filter').addEventListener('change', updateDashboard);
-
-                // --- モーダルの開閉を制御する命令を追加 ---
-        window.openPastDataModal = () => {
-            window.renderModalTable();
-            document.getElementById('past-modal').classList.add('active');
-        };
-
-        window.closePastDataModal = () => {
-            document.getElementById('past-modal').classList.remove('active');
-        };
+        window.openPastDataModal = () => { window.renderModalTable(); document.getElementById('past-modal').classList.add('active'); };
+        window.closePastDataModal = () => document.getElementById('past-modal').classList.remove('active');
     </script>
 </body>
 </html>
