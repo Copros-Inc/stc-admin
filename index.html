@@ -39,6 +39,29 @@
             </div>
         </div>
 
+        <!-- [移動・修正版] フィルターを最上部へ -->
+        <div class="bg-white/5 border border-white/5 p-6 rounded-[2.5rem] mb-8 flex flex-wrap items-center justify-center gap-8 shadow-inner">
+            <div class="flex items-center gap-4">
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Target Month</span>
+                <select id="target-month-select" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-2 font-black text-sky-400 outline-none focus:border-sky-500 transition-all">
+                    <option value="all">年度通期累計 (7月-6月)</option>
+                    <option value="0">7月</option><option value="1">8月</option><option value="2">9月</option><option value="3">10月</option>
+                    <option value="4">11月</option><option value="5">12月</option><option value="6">1月</option><option value="7">2月</option>
+                    <option value="8">3月</option><option value="9">4月</option><option value="10">5月</option><option value="11">6月</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Course Filter</span>
+                <select id="course-filter" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-2 font-black text-sky-400 outline-none focus:border-sky-500 transition-all">
+                    <option value="all">すべての講習を表示</option>
+                    <option value="玉掛け">玉掛け技能講習</option>
+                    <option value="クレーン">小型移動式クレーン</option>
+                    <option value="フォーク">フォークリフト運転</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 重要指標サマリー -->
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
             <div class="stat-card border-l-4 border-sky-500">
                 <span class="stat-label">受講者数</span>
@@ -65,28 +88,7 @@
                 <div class="stat-number text-indigo-400" id="card-sales">¥0 <span class="text-xs opacity-40">-</span></div>
             </div>
         </div>
-
-        <div class="bg-white/5 border border-white/5 p-6 rounded-[2rem] mb-10 flex flex-wrap items-center justify-center gap-8">
-            <div class="flex items-center gap-4">
-                <span class="text-[10px] font-black text-slate-500 uppercase italic tracking-widest">Target Month</span>
-<select id="target-month-select" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-2 font-black text-sky-400 outline-none focus:border-sky-500 transition-all">
-    <option value="all">年度通期累計 (7月-6月)</option>
-    <option value="0">7月</option><option value="1">8月</option><option value="2">9月</option><option value="3">10月</option>
-    <option value="4">11月</option><option value="5">12月</option><option value="6">1月</option><option value="7">2月</option>
-    <option value="8">3月</option><option value="9">4月</option><option value="10">5月</option><option value="11">6月</option>
-</select>
-            </div>
-            <div class="flex items-center gap-4">
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Course Filter</span>
-                <select id="course-filter" class="bg-slate-900 border border-white/10 rounded-xl px-6 py-2 font-black text-sky-400 outline-none focus:border-sky-500 transition-all">
-                    <option value="all">すべての講習を表示</option>
-                    <option value="玉掛け">玉掛け技能講習</option>
-                    <option value="クレーン">小型移動式クレーン</option>
-                    <option value="フォーク">フォークリフト運転</option>
-                </select>
-            </div>
-        </div>
-
+        
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-10">
             <div class="lg:col-span-3 chart-container">
                 <h3 class="font-[900] italic text-sky-400 uppercase tracking-tighter mb-8">Course performance trends</h3>
@@ -243,25 +245,38 @@
                 return { t_all, c_all, f_all, t_full, c_full, f_full, sales, afterHours };
             });
 
-            let users = 0, occupied = 0, planCap = 0, pastP = 0, totalSales = 0, totalAfterHours = 0;
+            // 2. 合算計算（システム自動分 ＋ モーダル手入力分）
+            let users = 0, planCap = 0, pastP = 0, totalSales = 0, totalAfterHours = 0;
             const calc = (mIdx) => {
                 const s = statsData[`${fy}_${mIdx}`] || {};
                 const p = statsData[`${fy-1}_${mIdx}`] || {};
                 const sc = sysCounts[mIdx];
-                const curT_f = sc.t_full + (s.t_prs || 0); const curT_a = sc.t_all + (s.t_prs || 0);
-                const curC_f = sc.c_full + (s.c_prs || 0); const curC_a = sc.c_all + (s.c_prs || 0);
-                const curF_f = sc.f_full + (s.f_prs || 0); const curF_a = sc.f_all + (s.f_prs || 0);
+
+                // 実績 ＝ Web本申込 ＋ モーダル実績人数（手動分）
+                const curT_f = sc.t_full + (s.t_prs || 0);
+                const curC_f = sc.c_full + (s.c_prs || 0);
+                const curF_f = sc.f_full + (s.f_prs || 0);
+                
                 totalSales += sc.sales + ((s.t_prs||0)*27000) + ((s.c_prs||0)*37000) + ((s.f_prs||0)*32000);
                 totalAfterHours += sc.afterHours;
-                if(filterC === '玉掛け') { users += curT_f; occupied += curT_a; planCap += (s.t_cnt||0)*8; pastP += (p.t_prs||0); }
-                else if(filterC === 'クレーン') { users += curC_f; occupied += curC_a; planCap += (s.c_cnt||0)*6; pastP += (p.c_prs||0); }
-                else if(filterC === 'フォーク') { users += curF_f; occupied += curF_a; planCap += (s.f_cnt||0)*10; pastP += (p.f_prs||0); }
-                else { users += (curT_f + curC_f + curF_f); occupied += (curT_a + curC_a + curF_a); planCap += ((s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10); pastP += ((p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0)); }
+
+                if(filterC === '玉掛け') { 
+                    users += curT_f; planCap += (s.t_cnt||0)*8; pastP += (p.t_prs||0); 
+                } else if(filterC === 'クレーン') { 
+                    users += curC_f; planCap += (s.c_cnt||0)*6; pastP += (p.c_prs||0); 
+                } else if(filterC === 'フォーク') { 
+                    users += curF_f; planCap += (s.f_cnt||0)*10; pastP += (p.f_prs||0); 
+                } else { 
+                    users += (curT_f + curC_f + curF_f); 
+                    planCap += ((s.t_cnt||0)*8 + (s.c_cnt||0)*6 + (s.f_cnt||0)*10);
+                    pastP += ((p.t_prs||0) + (p.c_prs||0) + (p.f_prs||0));
+                }
             };
             if(targetM === 'all') months.forEach((_, i) => calc(i)); else calc(parseInt(targetM));
 
+            // カード表示：空席数 ＝ 計画キャパ ー 実績人数
             document.getElementById('card-users').innerHTML = users + ' <span class="text-xs opacity-40">名</span>';
-            document.getElementById('card-empty').innerHTML = Math.max(0, planCap - occupied) + ' <span class="text-xs opacity-40">席</span>';
+            document.getElementById('card-empty').innerHTML = Math.max(0, planCap - users) + ' <span class="text-xs opacity-40">席</span>';
             document.getElementById('card-target').innerHTML = (planCap > 0 ? ((users/planCap)*100).toFixed(1) : "--") + ' <span class="text-xs opacity-40">%</span>';
             document.getElementById('card-afterhours').innerHTML = totalAfterHours + ' <span class="text-xs opacity-40">件</span>';
             document.getElementById('card-sales').innerHTML = '¥' + totalSales.toLocaleString() + ' <span class="text-xs opacity-40">-</span>';
