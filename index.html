@@ -142,25 +142,20 @@
         let reservations = [];
         let statsData = {}; 
         let currentModalYear = 2025;
-        const months = ["4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月"];
-        const prices = { "玉掛け": 27000, "クレーン": 37000, "31H": 32000, "11H": 22000, "その他": 15000 };
+        const months = ["7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月", "4月", "5月", "6月"];
 
-        signInAnonymously(auth).then(async () => {
-            const res = await getDoc(doc(db, "settings", "management_stats_v2"));
-            if(res.exists()) statsData = res.data();
-            
-            // --- [修正] 現在の年度と月を自動計算してセット ---
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth() + 1; // 1-12
+        // signInAnonymously(auth).then... の中
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
 
-            // 年度判定（4月以降はその年、3月までは前年を年度とする）
-            const currentFY = month >= 4 ? year : year - 1;
-            document.getElementById('fiscal-year-select').value = currentFY.toString();
+        // 会計年度判定（7月以降はその年、6月までは前年）
+        const currentFY = month >= 7 ? year : year - 1;
+        document.getElementById('fiscal-year-select').value = currentFY.toString();
 
-            // 月のインデックス判定（4月=0, 5月=1 ... 3月=11）
-            const monthIdx = month >= 4 ? month - 4 : month + 8;
-            document.getElementById('target-month-select').value = monthIdx.toString();
+        // 月のインデックス判定（7月=0, 8月=1 ... 6月=11）
+        const monthIdx = month >= 7 ? month - 7 : month + 5;
+        document.getElementById('target-month-select').value = monthIdx.toString();
             // ----------------------------------------------
 
             onSnapshot(collection(db, "reservations"), (snap) => {
@@ -217,13 +212,15 @@
             const fyData = reservations.filter(r => {
                 if(!r.createdAt || r.status === 'revoked') return false;
                 const d = r.createdAt.toDate();
-                return (d.getMonth() + 1 >= 4 ? d.getFullYear() : d.getFullYear() - 1).toString() === fy;
+                const m = d.getMonth() + 1;
+                const resFY = m >= 7 ? d.getFullYear() : d.getFullYear() - 1; // ここを7に変更
+                return resFY.toString() === fy;
             });
 
             let users = 0, sales = 0, afterHours = 0;
             fyData.forEach(r => {
                 const d = r.createdAt.toDate();
-                const mIdx = d.getMonth() + 1 >= 4 ? d.getMonth() + 1 - 4 : d.getMonth() + 1 + 8;
+                const mIdx = d.getMonth() + 1 >= 7 ? d.getMonth() + 1 - 7 : d.getMonth() + 1 + 5;
                 if(targetM !== 'all' && mIdx.toString() !== targetM) return;
                 const cName = r.courseName || "";
                 if(filterC !== 'all' && !cName.includes(filterC)) return;
@@ -266,7 +263,7 @@
             const counts = { '玉掛け': new Array(12).fill(0), 'フォーク': new Array(12).fill(0), 'クレーン': new Array(12).fill(0) };
             fyData.forEach(r => {
                 const d = r.createdAt.toDate();
-                const mIdx = d.getMonth() + 1 >= 4 ? d.getMonth() + 1 - 4 : d.getMonth() + 1 + 8;
+                const mIdx = d.getMonth() + 1 >= 7 ? d.getMonth() + 1 - 7 : d.getMonth() + 1 + 5;
                 if((r.courseName||"").includes("玉掛")) counts['玉掛け'][mIdx]++; else if((r.courseName||"").includes("フォーク")) counts['フォーク'][mIdx]++; else if((r.courseName||"").includes("クレーン")) counts['クレーン'][mIdx]++;
             });
             const ctx = document.getElementById('mainChart').getContext('2d');
@@ -279,13 +276,21 @@
                         { label: '玉掛け', data: counts['玉掛け'], borderColor: '#00a2ff', tension: 0.4 },
                         { label: 'フォーク', data: counts['フォーク'], borderColor: '#10b981', tension: 0.4 },
                         { label: 'クレーン', data: counts['クレーン'], borderColor: '#f59e0b', tension: 0.4 },
-                        { label: '前年合計実績', data: months.map((_, i) => { 
-                            const p = statsData[`${fy-1}_${i}`] || {}; 
-                            return (p.t_prs||0)+(p.c_prs||0)+(p.f_prs||0); 
-                        }), borderColor: 'rgba(255,255,255,0.1)', borderDash: [5, 5], tension: 0 }
+                        // ★前年度の破線を追加
+                        { label: '前年:玉掛', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.t_prs || 0)), borderColor: '#00a2ff', borderDash: [5, 5], tension: 0.3, fill: false, opacity: 0.5 },
+                        { label: '前年:ﾌｫｰｸ', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.f_prs || 0)), borderColor: '#10b981', borderDash: [5, 5], tension: 0.3, fill: false, opacity: 0.5 },
+                        { label: '前年:ｸﾚｰﾝ', data: months.map((_, i) => (statsData[`${fy-1}_${i}`]?.c_prs || 0)), borderColor: '#f59e0b', borderDash: [5, 5], tension: 0.3, fill: false, opacity: 0.5 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#64748b' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }, x: { grid: { display: false }, ticks: { color: '#64748b' } } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { labels: { color: '#fff' } } }, 
+                    scales: { 
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#fff' } }, 
+                        x: { grid: { display: false }, ticks: { color: '#fff' } } // ★軸の文字を白に
+                    } 
+                }
             });
             const shareCtx = document.getElementById('shareChart').getContext('2d');
             if(shareChart) shareChart.destroy();
